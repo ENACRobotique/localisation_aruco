@@ -1,0 +1,10 @@
+
+CMakeFiles/
+
+Debug/
+
+build/
+
+catkin_generated/
+
+data/
