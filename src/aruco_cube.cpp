@@ -291,9 +291,12 @@ void aruco_cube::compute_all(){
 }
 
 
-void aruco_cube::publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp){
-	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok())
-			return;
+geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
+	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
+		geometry_msgs::PoseStamped nul;
+		nul.header.frame_id="-1";
+		return nul;
+	}
 	float x_t, y_t, z_t,roll,yaw,pitch;
 	x_t = -cube_trans.at<Vec3f>(0,0)[0];
 	y_t =  cube_trans.at<Vec3f>(0,0)[1];
@@ -320,14 +323,14 @@ void aruco_cube::publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time 
 	geometry_msgs::Pose pose;
 
 	//m.id = id_front;
-	msg_ps.header.frame_id = "aruco_cube";
+	msg_ps.header.frame_id =to_string(id_front);
 	msg_ps.header.stamp = stamp;
 	pose.position.x = x_t;
 	pose.position.y = y_t;
 	pose.position.z = z_t;
 	pose.orientation = p_quat;
 	msg_ps.pose = pose;
-	pose_pub_markers.publish(msg_ps);
+	return msg_ps;
 }
 
 void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
@@ -360,5 +363,30 @@ void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
     		FONT_HERSHEY_SCRIPT_SIMPLEX,peri/4./50.,
 			Scalar(0,0,255),3);
 
+}
+
+
+void cube_manager::push_back(aruco_cube aru_cub){
+	cubes.push_back(aru_cub);
+}
+
+void cube_manager::update_marker(vector<Marker> vect_m){
+	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m);
+}
+
+void cube_manager::compute_all(){
+	for(int i=0; i<cubes.size();i++)cubes[i].compute_all();
+}
+
+void  cube_manager::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique ){
+	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,CameraMatrix,unique );
+}
+
+void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp){
+	for(int i=0; i<cubes.size();i++){
+		geometry_msgs::PoseStamped msg=cubes[i].publish_marcker_pose(stamp);
+		if(msg.header.frame_id!="-1")
+			pose_pub_markers.publish(msg);
+	}
 }
 

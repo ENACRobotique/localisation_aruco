@@ -130,11 +130,23 @@ public:
 	float max_peri();
 	void compute_T_R();
 	void compute_all();
-	void publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp);
+	geometry_msgs::PoseStamped  publish_marcker_pose(ros::Time stamp);
 
 	//affichage
 	void aff_cube(Mat * current_image,Mat CameraMatrix,bool unique=false );
 };
+
+class cube_manager{
+public:
+	vector<aruco_cube>cubes;
+	void push_back(aruco_cube aru_cub);
+	void update_marker(vector<Marker> vect_m);
+	void compute_all();
+	void publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp);//TODO
+
+	void aff_cube(Mat * current_image,Mat CameraMatrix,bool unique=false );
+};
+
 
 // classe qui gère l'arriver des images
 class ImageConverter{
