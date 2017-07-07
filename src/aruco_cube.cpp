@@ -287,6 +287,46 @@ void aruco_cube::compute_all(){
 	compute_T_R();
 }
 
+
+void aruco_cube::publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp){
+	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok())
+			return;
+	float x_t, y_t, z_t,roll,yaw,pitch;
+	x_t = -cube_trans.at<Vec3f>(0,0)[0];
+	y_t =  cube_trans.at<Vec3f>(0,0)[1];
+	z_t =  cube_trans.at<Vec3f>(0,0)[2];
+
+	yaw   =  atan2(cube_rot.at<float>(1,0), cube_rot.at<float>(0,0));
+	if(abs(cube_rot.at<float>(2,2))>10e-3)
+		roll  =  atan2(cube_rot.at<float>(2,1), cube_rot.at<float>(2,2));
+	else
+		roll  = M_PI*sgn( cube_rot.at<float>(2,1) );
+	double square=pow( pow(cube_rot.at<float>(2,1),2)+
+					   pow(cube_rot.at<float>(2,2),2) ,.5);
+	pitch =  atan2(-cube_rot.at<float>(2,0), square);
+
+	geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
+
+	// See: http://en.wikipedia.org/wiki/Flight_dynamics
+
+	printf( "Angle >> roll: %5.1f pitch: %5.1f yaw: %5.1f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
+	printf( "Dist. >>  x_d: %5.1f   y_d: %5.1f z_d: %5.1f \n", x_t, y_t, z_t);
+
+	// Now publish the pose message, remember the offsets
+	geometry_msgs::PoseStamped msg_ps;
+	geometry_msgs::Pose pose;
+
+	//m.id = id_front;
+	msg_ps.header.frame_id = "aruco_cube";
+	msg_ps.header.stamp = stamp;
+	pose.position.x = x_t;
+	pose.position.y = y_t;
+	pose.position.z = z_t;
+	pose.orientation = p_quat;
+	msg_ps.pose = pose;
+	pose_pub_markers.publish(msg_ps);
+}
+
 void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
 	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 )
 		return;
