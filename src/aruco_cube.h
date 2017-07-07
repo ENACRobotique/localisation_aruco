@@ -35,18 +35,22 @@ using namespace cv;
 
 Mat Rotation33(double alpha,double beta,double gamma);
 
-#define MAX_SLIDING_ARUCO 7
+#define MAX_SLIDING_ARUCO 6
 
 //classe des markers qui va nous permettre de faire le calcul de la variance
 //et des offset pour chaque marker qui compose un cube
 class stable_marker{
 public:
-	//attruibuts
+	//attruibuts de fonctionnement
 	list<Marker> sliding_markers;
 	list<ros::Time> sliding_timestamp;
 	int id =-1;
 	Mat trans_offset=Mat::zeros(3,1,CV_32F);
 	Mat rot_offset= Mat::zeros(3,3,CV_32F);
+
+	//attruibuts de "sorties"
+	Mat M_trans=Mat::zeros(3,1,CV_32F);
+	Mat M_rot  =Mat::zeros(3,3,CV_32F);
 
 	//constructeurs
 	stable_marker(){};
@@ -60,7 +64,11 @@ public:
 	void clean_old(ros::Duration delta_max);
 
 	// calculs internes
+	float m_size();
+	float max_peri();
 	double variance_pos();
+	void compute_Trans_rot();
+	void compute_all();
 
 	//affichage
 	void aff_cadre(Mat * current_image,Mat CameraMatrix);
@@ -79,13 +87,17 @@ Mat Rot_Face(int FACE_CUBE );
 
 #define DELTA_FACE 10
 #define DEFAULT_MARKER_SIZE 0.08
-#define DEFAULT_USELESS_TIME .25 //en s
+#define DEFAULT_USELESS_TIME .10 //en s
 
 class aruco_cube{
 public:
-	//attribut
+	//attribut de fonctionement
 	int id_front=-1;
 	stable_marker cube[FACE_CUBE_TOT];
+
+	//attruibuts de "sorties"
+	Mat cube_trans=Mat::zeros(3,1,CV_32F);
+	Mat cube_rot  =Mat::zeros(3,3,CV_32F);
 
 	//constructeur
 	aruco_cube();
@@ -96,8 +108,14 @@ public:
 	void update_marker(vector<Marker> vect_m);
 	void clean_time_old(ros::Duration delta_max);
 
-	//affichage
+	//calculs
+	double m_size();
+	float max_peri();
+	void compute_T_R();
+	void compute_all();
 
+	//affichage
+	void aff_cube(Mat * current_image,Mat CameraMatrix);
 };
 
 

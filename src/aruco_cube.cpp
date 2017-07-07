@@ -76,12 +76,44 @@ void stable_marker::clean_old(ros::Duration delta_max){
 	}
 }
 
+float stable_marker::m_size(){
+	if(sliding_markers.size()>0)
+		return sliding_markers.front().ssize;
+	return -1;
+}
+
+float stable_marker::max_peri(){
+	float max=0;
+	for(list<Marker>::iterator i=sliding_markers.begin();i!=sliding_markers.end();i++){
+		float peri=(*i).getPerimeter();
+		if(peri>max)
+			max=peri;
+	}
+	return max;
+}
+
 double stable_marker::variance_pos(){
 	double tot=0;
-	for(auto m = sliding_markers.begin();m!=sliding_markers.end();m++){
+	for(list<Marker>::iterator m = sliding_markers.begin();m!=sliding_markers.end();m++){
 		tot+=1;
 	}
 	return tot;
+}
+
+void stable_marker::compute_Trans_rot(){
+	if(sliding_markers.size()>0){
+		Rodrigues(sliding_markers.front().Rvec,M_rot);
+		M_trans=sliding_markers.front().Tvec;
+	}
+	else{
+		M_trans=Mat::zeros(3,1,CV_32F);
+		M_rot  =Mat::zeros(3,3,CV_32F);
+	}
+}
+
+void stable_marker::compute_all(){
+	compute_Trans_rot();
+	double var_pos=variance_pos();
 }
 
 
@@ -190,4 +222,73 @@ void aruco_cube::clean_time_old(ros::Duration delta_max){
 	}
 }
 
+void aruco_cube::compute_T_R(){
+	for(int i=0;i<FACE_CUBE_TOT;i++)cube[i].compute_Trans_rot();
+	float tot=0;
+	cube_trans=Mat::zeros(3,1,CV_32F);
+	cube_rot  =Mat::zeros(3,3,CV_32F);
+	for(int i=0;i<FACE_CUBE_TOT;i++){
+		if( countNonZero( cube[i].M_rot!=Mat::zeros(3,3,CV_32F) ) > 0 ){
+			cube_trans+=cube[i].M_trans;
+			cube_rot  +=cube[i].M_rot;
+		}
+	}
+	if(tot>0){
+		cube_trans/=tot;
+		cube_rot  /=tot;
+	}
+}
+
+double aruco_cube::m_size(){
+	for(int i=0; i<FACE_CUBE_TOT;i++){
+		double size=cube[i].m_size();
+		if(size>0)
+			return size;
+	}
+	return -1;
+}
+
+float aruco_cube::max_peri(){
+	float max=0;
+	for(int i=0;i<FACE_CUBE_TOT;i++){
+		float peri=cube[i].max_peri();
+		if(peri>max)
+			max=peri;
+	}
+	return max;
+}
+
+void aruco_cube::compute_all(){
+	compute_T_R();
+}
+
+void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix){
+	for(int i=0;i<FACE_CUBE_TOT;i++){
+		cube[i].aff_cadre(current_image,CameraMatrix);
+	}
+	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 )
+		return;
+    char id_str[3];
+	sprintf(id_str,"%d",id_front);
+
+	//procection 3D => 2D cam
+	vector<cv::Point3f> objectPoints;
+	objectPoints.push_back(Point3f(0     , 0      ,0     ));
+	Mat distCoeffs(4,1,cv::DataType<double>::type);
+	distCoeffs.at<double>(0) = 0;
+	distCoeffs.at<double>(1) = 0;
+	distCoeffs.at<double>(2) = 0;
+	distCoeffs.at<double>(3) = 0;
+	Mat rot;
+	Rodrigues(cube_rot,rot);
+	vector<Point2f> projectedPoints;
+	projectPoints(objectPoints, rot, cube_trans ,CameraMatrix,distCoeffs,projectedPoints);
+	float peri=max_peri();
+	Point2d coin_bas_gauche_text=projectedPoints[0];
+	coin_bas_gauche_text.x+=peri/8;
+    putText(*current_image,id_str,coin_bas_gauche_text,
+    		FONT_HERSHEY_SCRIPT_SIMPLEX,peri/4./50.,
+			Scalar(0,0,255),3);
+
+}
 

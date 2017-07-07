@@ -229,21 +229,16 @@ int main(int argc,char **argv) {
         // Detection of markers in the image passed
         MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
         test_cube.update_marker(TheMarkers);
+        test_cube.compute_all();
+
+        test_cube.aff_cube(&current_image,TheCameraParameters.CameraMatrix);
 
         float x_t, y_t, z_t;
         float roll,yaw,pitch;
 
         bool found = (TheMarkers.size()>0);
 
-        for(int i=0;i<FACE_CUBE_TOT;i++){
-        	cout<<"|"<< test_cube.cube[i].id<<":"<<test_cube.cube[i].sliding_markers.size();
-        }
-		cout<<endl;
         if (found) {
-			for(int i=0;i<FACE_CUBE_TOT;i++){
-				test_cube.cube[i].aff_cadre(&current_image,TheCameraParameters.CameraMatrix);
-
-			}
 
             x_t = -TheMarkers[0].Tvec.at<Vec3f>(0,0)[0];
             y_t = TheMarkers[0].Tvec.at<Vec3f>(0,0)[1];
@@ -331,14 +326,14 @@ int main(int argc,char **argv) {
 				}
 				//fin test de projection
                 //texte proportionel à la taille du marker
-
+/*
                 char id_str[3];
 				sprintf(id_str,"%d",TheMarkers[i].id);
 				Point2d coin_bas_gauche_text=TheMarkers[i].getCenter();
 				coin_bas_gauche_text.x+=TheMarkers[i].getPerimeter()/8;
                 putText(current_image,id_str,coin_bas_gauche_text,
                 		FONT_HERSHEY_SCRIPT_SIMPLEX,TheMarkers[i].getPerimeter()/4./50.,
-						Scalar::all(255),3);
+						Scalar::all(255),3);*/
 
             }
         }
