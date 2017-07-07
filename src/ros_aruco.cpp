@@ -34,51 +34,12 @@ or implied, of Rafael Muñoz Salinas.
 using namespace aruco;
 using namespace cv;
 
+#define WIN_NAME "ROS ARUCO"
+//#define THREADHOLD_VISU "THRESHOLD IMAGE"
+
 template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
-//test de reprojection
-Mat image_test = imread("55.jpg", CV_LOAD_IMAGE_GRAYSCALE);
-
-vector<Point3f> im2Dto3Dpoint(Mat image,float size,float offset_z=0){
-	vector<Point3f> XYZ;
-	for(int x=0; x<image.rows; ++x) {
-		for(int y=0; y<image.cols; ++y) {
-			XYZ.push_back( Point3f( ((x/(float)image.rows)-.5)*size,
-								   ((-y/(float)image.cols)+.5)*size,
-								   offset_z));
-		}
-	}
-	return XYZ;
-}
-
-cv::Mat current_image_copy;
-cv::Mat current_image;
-cv::Mat rot_mat(3, 3, cv::DataType<float>::type);
-
-CameraParameters TheCameraParameters;
-MarkerDetector MDetector;
-vector<Marker> TheMarkers;
-aruco_cube test_cube(15);
-
-void cvTackBarEvents(int pos,void*);
-bool readCameraParameters(string TheIntrinsicFile,CameraParameters &CP,Size size);
-
-pair<double,double> AvrgTime(0,0) ;
-double ThresParam1,ThresParam2;
-int iThresParam1,iThresParam2;
-bool update_images;
-string TheInputVideo;
-string TheIntrinsicFile;
-float TheMarkerSize=-1;
-std::recursive_mutex r_mutex;
-const float p_off = 0;//CV_PI;
-const float r_off = 0;//CV_PI/2;
-const float y_off = 0;//CV_PI/2;
-
-ros::Time timestamp;
-ros::Time last_frame;
-
 
 class ImageConverter
 {
@@ -87,11 +48,29 @@ class ImageConverter
   image_transport::ImageTransport it_;
   image_transport::Subscriber image_sub_;
 
+  std::recursive_mutex * r_mutex;
+
+
+  ros::Time last_frame;
 public:
+  ros::Time timestamp;
+
   ImageConverter() : it_(nh_)
   {
     // subscribe to input video feed and publish output video feed
     image_sub_ = it_.subscribe("/cam1", 1, &ImageConverter::imageCb, this);
+    r_mutex=new std::recursive_mutex ();
+  }
+
+  ImageConverter(string *topic) : it_(nh_)
+  {
+    // subscribe to input video feed and publish output video feed
+	  string default_top="/cam1";
+	if(topic==NULL){
+		topic=&default_top;
+	}
+	image_sub_ = it_.subscribe(*topic, 1, &ImageConverter::imageCb, this);
+	r_mutex=new std::recursive_mutex ();
   }
 
   ~ImageConverter()
@@ -105,10 +84,10 @@ public:
         usleep(500);
         ros::spinOnce();
     }
-    r_mutex.lock();
+    (*r_mutex).lock();
     *input_image = src_img;
     last_frame = timestamp;
-    r_mutex.unlock();
+    (*r_mutex).unlock();
   }
 
   void imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -123,30 +102,30 @@ public:
     catch (cv_bridge::Exception& e)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
-      r_mutex.unlock();
+      (*r_mutex).unlock();
       return;
     }
-    r_mutex.lock();
+    (*r_mutex).lock();
     src_img = cv_ptr->image;
-    r_mutex.unlock();
+    (*r_mutex).unlock();
   }
 
 };
 
-bool readArguments ( int argc,char **argv )
+bool readArguments (string* top,string *File,float *Size, int argc,char **argv )
 {
     if (argc<2) {
         cerr << ">>> Invalid number of arguments" << endl;
-        cerr << ">>> Usage: (in.avi|live|topic) [intrinsics.yml] [size]" <<endl;
+        cerr << ">>> Usage: (topic) [intrinsics.yml] [size]" <<endl;
         return false;
     }
 
-    TheInputVideo=argv[1];
+    (*top)=argv[1];
 
     if (argc>=3)
-        TheIntrinsicFile=argv[2];
+    	(*File)=argv[2];
     if (argc>=4)
-        TheMarkerSize=atof(argv[3]);
+        (*Size)=atof(argv[3]);
     if (argc==3)
         cerr<< ">>> NOTE: You need makersize to see 3d info!" <<endl;
 
@@ -162,18 +141,35 @@ void sig_stop(int a)
 
 int main(int argc,char **argv) {
 
+	cv::Mat current_image;
+
+	CameraParameters TheCameraParameters;
+	MarkerDetector MDetector;
+	vector<Marker> TheMarkers;
+    aruco_cube test_cube(15);
+
     // ROS messaging init
 	ros::init(argc, argv, "aruco_tf_publisher");
 	ros::NodeHandle n;
     ros::spinOnce();
 
-    update_images = true;
+    int Thresmin,Thresmax;
 
-	if (readArguments(argc,argv)==false) {
+    //var de gestion des entrées
+	string topic;
+	string TheIntrinsicFile;
+	float TheMarkerSize=-1;
+	if (readArguments(&topic,&TheIntrinsicFile, &TheMarkerSize, argc,argv)==false) {
 		return 0;
 	}
-
-    ImageConverter ic = ImageConverter();
+	string *topic_pointeur=NULL;
+	if (topic != ""){
+		topic="/"+topic;
+		cout<<topic<<endl;
+		topic_pointeur=&topic;
+		//ic = ImageConverter();
+	}
+	ImageConverter ic  = ImageConverter(topic_pointeur);
 
     while (current_image.empty()) {
         ros::spinOnce();
@@ -186,38 +182,37 @@ int main(int argc,char **argv) {
 		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
 		TheCameraParameters.resize(current_image.size());
 	}
+	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 #ifdef DEBUG
 	// Create gui
-	// cv::namedWindow("THRESHOLD IMAGE", 1);
-	cv::namedWindow("ROS ARUCO", 1);
+#ifdef THREADHOLD_VISU
+	cv::namedWindow(THREADHOLD_VISU, 1);
 #endif
-	MDetector.getThresholdParams(ThresParam1, ThresParam2);
-	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
+	cv::namedWindow(WIN_NAME, 1);
 
-	iThresParam1 = ThresParam1;
-	iThresParam2 = ThresParam2;
-#ifdef DEBUG
-	cv::createTrackbar("ThresParam1", "ROS ARUCO", &iThresParam1, 13, cvTackBarEvents);
-	cv::createTrackbar("ThresParam2", "ROS ARUCO", &iThresParam2, 13, cvTackBarEvents);
+	double inter1,inter2;
+	MDetector.getThresholdParams(inter1, inter2);
+	Thresmin=inter1;Thresmax=inter2;
+
+
+	cv::createTrackbar("Thresmin", WIN_NAME, &Thresmin, 100);
+	cv::createTrackbar("Thresmax", WIN_NAME, &Thresmax, 100);
 #endif
 	char key=0;
 
 	ros::Publisher pose_pub = n.advertise<geometry_msgs::Pose>("aruco/pose", 1);
-    // ros::Publisher pose_pub_stamped = n.advertise<geometry_msgs::PointStamped>("aruco_point_stamped", 1);
     ros::Publisher pose_pub_markers = n.advertise<visualization_msgs::MarkerArray>("/aruco/markerarray", 1);
 	tf::TransformBroadcaster broadcaster;
 
-	// Capture until press ESC or until the end of the video
-
-
 	signal(SIGINT, sig_stop);
-
+	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
 
    		key = waitKey(1);
 
         ros::spinOnce();
 
+        MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
 
         ic.getCurrentImage(&current_image);
 
@@ -226,8 +221,14 @@ int main(int argc,char **argv) {
             cout << ">>> Image EMPTY" << endl;
             continue;
         }
+
         // Detection of markers in the image passed
         MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
+#ifdef THREADHOLD_VISU
+        Mat threadhold_im=MDetector.getThresholdedImage();
+        imshow(THREADHOLD_VISU,threadhold_im);
+#endif
+
         test_cube.update_marker(TheMarkers);
         test_cube.compute_all();
 
@@ -236,15 +237,12 @@ int main(int argc,char **argv) {
         float x_t, y_t, z_t;
         float roll,yaw,pitch;
 
-        bool found = (TheMarkers.size()>0);
+        if ((countNonZero( test_cube.cube_rot!=Mat::zeros(3,3,CV_32F) ) != 0 )) {
 
-        if (found) {
-
-            x_t = -TheMarkers[0].Tvec.at<Vec3f>(0,0)[0];
-            y_t = TheMarkers[0].Tvec.at<Vec3f>(0,0)[1];
-            z_t = TheMarkers[0].Tvec.at<Vec3f>(0,0)[2];
-
-            cv::Rodrigues(TheMarkers[0].Rvec, rot_mat);
+            x_t = -test_cube.cube_trans.at<Vec3f>(0,0)[0];
+            y_t =  test_cube.cube_trans.at<Vec3f>(0,0)[1];
+            z_t =  test_cube.cube_trans.at<Vec3f>(0,0)[2];
+            cv::Mat rot_mat=test_cube.cube_rot;
 
             yaw   =  atan2(rot_mat.at<float>(1,0), rot_mat.at<float>(0,0));
             if(abs(rot_mat.at<float>(2,2))>10e-3)
@@ -257,7 +255,7 @@ int main(int argc,char **argv) {
 			// See: http://en.wikipedia.org/wiki/Flight_dynamics
 
 
-            printf( "Angle >> roll: %5.1f pitch: %5.1f yaw: %5.1f \n", (roll-r_off)*(180.0/CV_PI), (pitch-p_off)*(180.0/CV_PI), (yaw-y_off)*(180.0/CV_PI));
+            printf( "Angle >> roll: %5.1f pitch: %5.1f yaw: %5.1f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
             printf( "Dist. >>  x_d: %5.1f   y_d: %5.1f z_d: %5.1f \n", x_t, y_t, z_t);
 
             geometry_msgs::Pose msg;
@@ -266,14 +264,14 @@ int main(int argc,char **argv) {
             if (ros::ok()) {
 
                 // Publish TF message including the offsets
-                tf::Quaternion quat = tf::createQuaternionFromRPY(roll-p_off, pitch+p_off, yaw-y_off);
+                tf::Quaternion quat = tf::createQuaternionFromRPY(roll, pitch, yaw);
                 broadcaster.sendTransform(tf::StampedTransform(tf::Transform(quat, tf::Vector3(x_t, y_t, z_t)), ros::Time::now(),"camera", "marker"));
 
                 // Now publish the pose message, remember the offsets
                 msg.position.x = x_t;
                 msg.position.y = y_t;
                 msg.position.z = z_t;
-                geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll-r_off, pitch+p_off, yaw-y_off);
+                geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
                 msg.orientation = p_quat;
                 pose_pub.publish(msg);
 
@@ -284,7 +282,7 @@ int main(int argc,char **argv) {
 
                 m.id = 0;
                 m.header.frame_id = "aruco";
-                m.header.stamp = timestamp;
+                m.header.stamp = ic.timestamp;
                 pose.position.x = x_t;
                 pose.position.y = y_t;
                 pose.position.z = z_t;
@@ -296,91 +294,14 @@ int main(int argc,char **argv) {
             }
         }
 
-        if (TheCameraParameters.isValid() &&
-        		update_images){
-
-            for (unsigned int i=0;i<TheMarkers.size();i++) {
-                //CvDrawingUtils::draw3dCube(current_image, TheMarkers[i], TheCameraParameters);
-                //CvDrawingUtils::draw3dAxis(current_image, TheMarkers[i], TheCameraParameters);
-
-                //test de projection
-				vector<cv::Point3f> objectPoints;
-				//objectPoints=im2Dto3Dpoint(image_test,TheMarkerSize,TheMarkerSize);
-				objectPoints.push_back(Point3f(0,0,-TheMarkerSize/2.));
-				Mat distCoeffs(4,1,cv::DataType<double>::type);
-				distCoeffs.at<double>(0) = 0;
-				distCoeffs.at<double>(1) = 0;
-				distCoeffs.at<double>(2) = 0;
-				distCoeffs.at<double>(3) = 0;
-				vector<Point2f> projectedPoints;
-				projectPoints(objectPoints, TheMarkers[i].Rvec, TheMarkers[i].Tvec ,
-						TheCameraParameters.CameraMatrix,distCoeffs,
-						projectedPoints);
-				for(size_t i=0;i<projectedPoints.size();i++)
-				{
-					if(i%20==0){
-						Scalar intensity = Scalar(0,255,255);
-								//image_test.at<uchar>(i%image_test.rows,i/image_test.rows);
-						circle(current_image, projectedPoints[i], 2,intensity, 4);
-					}
-				}
-				//fin test de projection
-                //texte proportionel à la taille du marker
-/*
-                char id_str[3];
-				sprintf(id_str,"%d",TheMarkers[i].id);
-				Point2d coin_bas_gauche_text=TheMarkers[i].getCenter();
-				coin_bas_gauche_text.x+=TheMarkers[i].getPerimeter()/8;
-                putText(current_image,id_str,coin_bas_gauche_text,
-                		FONT_HERSHEY_SCRIPT_SIMPLEX,TheMarkers[i].getPerimeter()/4./50.,
-						Scalar::all(255),3);*/
-
-            }
-        }
-
         // Show input with augmented information and the thresholded image
 #ifdef DEBUG
-        cv::imshow("ROS ARUCO", current_image);
+        cv::imshow(WIN_NAME, current_image);
         //cv::imshow("THRESHOLD IMAGE", MDetector.getThresholdedImage());
 #endif
-
-        // If space is hit, don't render the image.
-		if (key == ' '){
-			update_images = !update_images;
-		}
-
-        // Limit to 50hz
-  		usleep(20000);
+        // Limit to 60hz
+  		usleep(15000);
 
 	}
 }
 
-void checkbox_callback(bool value){
-	update_images = value;
-}
-
-void cvTackBarEvents(int pos, void*)
-{
-    if (iThresParam1<3) iThresParam1=3;
-    if (iThresParam1%2!=1) iThresParam1++;
-    if (ThresParam2<1) ThresParam2=1;
-
-    ThresParam1=iThresParam1;
-    ThresParam2=iThresParam2;
-
-    MDetector.setThresholdParams(ThresParam1, ThresParam2);
-
-    // Recompute
-    // MDetector.detect(current_image, TheMarkers, TheCameraParameters);
-    // current_image.copyTo(current_image_copy);
-
-    // for (unsigned int i=0;i<TheMarkers.size();i++) TheMarkers[i].draw(current_image_copy, Scalar(0,0,255), 1);
-
-    // Draw a 3D cube in each marker if there is 3d info
-    // if (TheCameraParameters.isValid())
-    //     for (unsigned int i=0;i<TheMarkers.size();i++)
-    //         CvDrawingUtils::draw3dCube(current_image_copy, TheMarkers[i], TheCameraParameters);
-
-    // cv::imshow("ROS ARUCO", current_image_copy);
-    // cv::imshow("THRESHOLD IMAGE", MDetector.getThresholdedImage());
-}
