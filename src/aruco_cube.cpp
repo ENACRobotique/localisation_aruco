@@ -25,6 +25,67 @@ Mat Rotation33(double alpha,double beta,double gamma){
 }
 
 
+vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
+								   Mat rot,Mat trans,
+								   Mat CameraMatrix,Mat *distCoeffs){
+
+	if(distCoeffs==NULL){
+		distCoeffs= new Mat (4,1,cv::DataType<double>::type);
+		(*distCoeffs).at<double>(0) = 0;
+		(*distCoeffs).at<double>(1) = 0;
+		(*distCoeffs).at<double>(2) = 0;
+		(*distCoeffs).at<double>(3) = 0;
+	}
+	Mat vect_rot=rot;
+	if(vect_rot.size()==Size(3,3))
+		Rodrigues(vect_rot,vect_rot);
+
+	vector<Point2f> projectedPoints;
+	projectPoints(objectPoints, vect_rot, trans ,CameraMatrix,*distCoeffs,projectedPoints);
+	return projectedPoints;
+
+
+}
+
+vector<Point2i>PTS2FtoPTS2I(vector<Point2f> vect){
+	vector<Point2i>res;
+	for(int i =0;i<vect.size();i++)res.push_back(Point2i(vect[i]));
+	return res;
+}
+
+vector<Point3f>Cadre3D(float size){
+	vector<cv::Point3f> objectPoints;
+	//oeil cube
+	objectPoints.push_back(Point3f(0   , 0    ,0   ));
+	objectPoints.push_back(Point3f(size, size, size));
+	objectPoints.push_back(Point3f(size,-size, size));
+	objectPoints.push_back(Point3f(0   , 0    ,0   ));
+	objectPoints.push_back(Point3f(size, size,-size));
+	objectPoints.push_back(Point3f(size,-size,-size));
+	return objectPoints;
+}
+
+vector<Point3f>Axes3D(float size){
+	vector<cv::Point3f> objectPoints;
+	//axes
+	objectPoints.push_back(Point3f(0   ,0   ,0   ));
+	objectPoints.push_back(Point3f(size,0   ,0   ));
+	objectPoints.push_back(Point3f(0   ,0   ,0   ));
+	objectPoints.push_back(Point3f(0   ,size,0   ));
+	objectPoints.push_back(Point3f(0   ,0   ,0   ));
+	objectPoints.push_back(Point3f(0   ,0   ,size));
+	return objectPoints;
+}
+
+void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed,const Scalar color,
+                  int thickness, int lineType, int shift){
+	vector<Point2i> pts=PTS2FtoPTS2I(ptsCam);
+	const Point* p = &(pts[0]);
+	int n = (int)(pts.size());
+	polylines(*im, &p, &n, 1, closed, color, thickness,lineType, shift);
+
+}
+
 stable_marker::stable_marker(int id_m){
 	id=id_m;
 }
@@ -117,57 +178,20 @@ void stable_marker::compute_all(){
 }
 
 
-void stable_marker::aff_cadre(Mat * current_image,Mat CameraMatrix){
+void stable_marker::aff_slid(Mat * current_image,Mat CameraMatrix){
 	if(sliding_markers.size()==0)
 		return;
 
-
+	//params
 	vector<cv::Point3f> objectPoints;
 	float size_2=last().ssize/2;
 	float len_axe=size_2*4;
-	objectPoints.push_back(Point3f(0     , 0      ,0     ));
-	objectPoints.push_back(Point3f(size_2, size_2, size_2));
-	objectPoints.push_back(Point3f(size_2,-size_2, size_2));
-	objectPoints.push_back(Point3f(0     , 0      ,0     ));
-	objectPoints.push_back(Point3f(size_2, size_2,-size_2));
-	objectPoints.push_back(Point3f(size_2,-size_2,-size_2));
-	int nb_pt_cam=objectPoints.size();
-	objectPoints.push_back(Point3f(0      ,0      ,0      ));
-	objectPoints.push_back(Point3f(len_axe,0      ,0      ));
-	objectPoints.push_back(Point3f(0      ,0      ,0      ));
-	objectPoints.push_back(Point3f(0      ,len_axe,0      ));
-	objectPoints.push_back(Point3f(0      ,0      ,0      ));
-	objectPoints.push_back(Point3f(0      ,0      ,len_axe));
-	Mat distCoeffs(4,1,cv::DataType<double>::type);
-	distCoeffs.at<double>(0) = 0;
-	distCoeffs.at<double>(1) = 0;
-	distCoeffs.at<double>(2) = 0;
-	distCoeffs.at<double>(3) = 0;
-	vector<Point2f> projectedPoints;
-	projectPoints(objectPoints, last().Rvec, last().Tvec ,
-			CameraMatrix,distCoeffs,
-			projectedPoints);
-
-	vector<Point2i> printed_points,axes_points;
-	for(size_t i=0;i<projectedPoints.size();i++)
-	{
-		if(i<nb_pt_cam)
-			printed_points.push_back(Point2d(projectedPoints[i]));
-		else
-			axes_points.push_back(Point2d(projectedPoints[i]));
-		//circle(*current_image, projectedPoints[i], 2,Scalar(255,0,255);, 4);
-	}
-
-	const Point* p = &(printed_points[0]);
-	int n = (int)(printed_points.size());
-	//dessin de la camera
-	polylines(*current_image, &p, &n, 1, true, Scalar(0,255,255), 2);
-	p = &(axes_points[0]);
-	n = (int)(axes_points.size());
-	polylines(*current_image, &p, &n, 1, false, Scalar(255,0,0), 2);
-
-
-
+	//oeil cub
+	objectPoints=Cadre3D(size_2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),true,Scalar(0,255,255),2);
+	//axes
+	objectPoints=Axes3D(len_axe);
+	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),true,Scalar(255,0,0),2);
 }
 
 Mat Rot_Face(int FACE_CUBE ){
@@ -231,6 +255,7 @@ void aruco_cube::compute_T_R(){
 		if( countNonZero( cube[i].M_rot!=Mat::zeros(3,3,CV_32F) ) > 0 ){
 			cube_trans+=cube[i].M_trans;
 			cube_rot  +=cube[i].M_rot;
+			tot++;
 		}
 	}
 	if(tot>0){
@@ -262,29 +287,31 @@ void aruco_cube::compute_all(){
 	compute_T_R();
 }
 
-void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix){
-	for(int i=0;i<FACE_CUBE_TOT;i++){
-		cube[i].aff_cadre(current_image,CameraMatrix);
-	}
+void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
 	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 )
 		return;
-    char id_str[3];
+	if(!unique){
+		for(int i=0;i<FACE_CUBE_TOT;i++){
+			cube[i].aff_slid(current_image,CameraMatrix);
+		}
+	}
+	vector<cv::Point3f>pts_aff=Cadre3D(m_size()/2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
+	//axes
+	pts_aff=Axes3D(m_size()*2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
+
+
+	char id_str[3];
 	sprintf(id_str,"%d",id_front);
 
 	//procection 3D => 2D cam
 	vector<cv::Point3f> objectPoints;
 	objectPoints.push_back(Point3f(0     , 0      ,0     ));
-	Mat distCoeffs(4,1,cv::DataType<double>::type);
-	distCoeffs.at<double>(0) = 0;
-	distCoeffs.at<double>(1) = 0;
-	distCoeffs.at<double>(2) = 0;
-	distCoeffs.at<double>(3) = 0;
-	Mat rot;
-	Rodrigues(cube_rot,rot);
-	vector<Point2f> projectedPoints;
-	projectPoints(objectPoints, rot, cube_trans ,CameraMatrix,distCoeffs,projectedPoints);
-	float peri=max_peri();
+	vector<Point2f> projectedPoints=Points3DtoCamPoints(objectPoints,cube_rot,cube_trans,CameraMatrix);
 	Point2d coin_bas_gauche_text=projectedPoints[0];
+
+	float peri=max_peri();
 	coin_bas_gauche_text.x+=peri/8;
     putText(*current_image,id_str,coin_bas_gauche_text,
     		FONT_HERSHEY_SCRIPT_SIMPLEX,peri/4./50.,

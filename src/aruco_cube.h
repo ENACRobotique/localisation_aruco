@@ -35,6 +35,19 @@ using namespace cv;
 
 Mat Rotation33(double alpha,double beta,double gamma);
 
+vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
+								   Mat rot,Mat trans,
+								   Mat CameraMatrix,Mat *distCoeffs=NULL);
+
+vector<Point2i>PTS2FtoPTS2I(vector<Point2f> vect);
+
+vector<Point3f>Cadre3D(float size);
+
+vector<Point3f>Axes3D(float size);
+
+void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed=false,const Scalar color=Scalar::all(255),
+                  int thickness=1, int lineType=8, int shift=0);
+
 #define MAX_SLIDING_ARUCO 6
 
 //classe des markers qui va nous permettre de faire le calcul de la variance
@@ -71,7 +84,7 @@ public:
 	void compute_all();
 
 	//affichage
-	void aff_cadre(Mat * current_image,Mat CameraMatrix);
+	void aff_slid(Mat * current_image,Mat CameraMatrix);
 
 };
 
@@ -115,7 +128,7 @@ public:
 	void compute_all();
 
 	//affichage
-	void aff_cube(Mat * current_image,Mat CameraMatrix);
+	void aff_cube(Mat * current_image,Mat CameraMatrix,bool unique=false );
 };
 
 
