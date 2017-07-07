@@ -71,7 +71,6 @@ int main(int argc,char **argv) {
 	MarkerDetector MDetector;
 	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 	vector<Marker> TheMarkers;
-    aruco_cube test_cube(15);
 
     // ROS messaging init
 	ros::init(argc, argv, "aruco_cube_publisher");
@@ -96,6 +95,7 @@ int main(int argc,char **argv) {
 	}
 	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
+    aruco_cube test_cube(15,TheMarkerSize);
 
     //wait a image
     while (current_image.empty()) {

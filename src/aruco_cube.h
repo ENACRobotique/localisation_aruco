@@ -118,7 +118,7 @@ public:
 
 	//constructeur
 	aruco_cube();
-	aruco_cube(int id_f);
+	aruco_cube(int id_f,float mark_size=-1);
 
 	//ajout marker
 	void add_marker(Marker new_m);
@@ -137,8 +137,7 @@ public:
 };
 
 // classe qui gère l'arriver des images
-class ImageConverter
-{
+class ImageConverter{
   Mat src_img;
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;

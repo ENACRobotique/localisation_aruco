@@ -208,11 +208,14 @@ Mat Rot_Face(int FACE_CUBE ){
 
 aruco_cube::aruco_cube():aruco_cube(-1){}
 
-aruco_cube::aruco_cube(int id_f){
+aruco_cube::aruco_cube(int id_f,float mark_size){
 	id_front=id_f;
 	int id=id_front;
 
-	Mat t_off = (Mat_<float>(3,1) << 0,0,-DEFAULT_MARKER_SIZE);
+	if(mark_size<=0)
+		mark_size=DEFAULT_MARKER_SIZE;
+
+	Mat t_off = (Mat_<float>(3,1) << 0,0,-mark_size/2);
 	Mat r_off;
 
 	for(int i=0;i<FACE_CUBE_TOT;i++){
