@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-PROJECT(ros_aruco)
+PROJECT(cube_pos)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -29,15 +29,15 @@ include_directories(
 	src/
 )
 
-add_executable(ros_aruco
+add_executable(cube_pos
 	src/ros_aruco.cpp 
 	src/aruco_cube.cpp 
 	src/aruco_cube.h
 )
 
-add_dependencies(ros_aruco ${catkin_EXPORTED_TARGETS})
+add_dependencies(cube_pos ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(ros_aruco 
+target_link_libraries(cube_pos 
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
@@ -50,7 +50,6 @@ add_definitions(-DDEBUG)
 #############
 
 # TODO
-
 
 #############
 ## Testing ##
