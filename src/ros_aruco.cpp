@@ -69,11 +69,12 @@ int main(int argc,char **argv) {
 	//params Marker et aruco_cube
 	CameraParameters TheCameraParameters;
 	MarkerDetector MDetector;
+	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 	vector<Marker> TheMarkers;
     aruco_cube test_cube(15);
 
     // ROS messaging init
-	ros::init(argc, argv, "aruco_tf_publisher");
+	ros::init(argc, argv, "aruco_cube_publisher");
 	ros::NodeHandle n;
     ros::spinOnce();
 
@@ -96,7 +97,7 @@ int main(int argc,char **argv) {
 	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
 
-
+    //wait a image
     while (current_image.empty()) {
         ros::spinOnce();
         ic.getCurrentImage(&current_image);
@@ -108,7 +109,6 @@ int main(int argc,char **argv) {
 		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
 		TheCameraParameters.resize(current_image.size());
 	}
-	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
@@ -129,13 +129,11 @@ int main(int argc,char **argv) {
 	char key=0;
 	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
-
    		key = waitKey(1);
-
         ros::spinOnce();
-
+#ifdef DEBUG
         MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
-
+#endif
         ic.getCurrentImage(&current_image);
 
         if (current_image.empty()) {
@@ -146,26 +144,23 @@ int main(int argc,char **argv) {
 
         // Detection of markers in the image passed
         MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
-#ifdef THREADHOLD_VISU
-        Mat threadhold_im=MDetector.getThresholdedImage();
-        imshow(THREADHOLD_VISU,threadhold_im);
-#endif
-
         test_cube.update_marker(TheMarkers);
         test_cube.compute_all();
 
-        test_cube.aff_cube(&current_image,TheCameraParameters.CameraMatrix);
-
         test_cube.publish_marcker_pose(pose_pub_markers,ic.timestamp);
+
+        test_cube.aff_cube(&current_image,TheCameraParameters.CameraMatrix);
 
         // Show input with augmented information and the thresholded image
 #ifdef DEBUG
         cv::imshow(WIN_NAME, current_image);
-        //cv::imshow("THRESHOLD IMAGE", MDetector.getThresholdedImage());
+#ifdef THREADHOLD_VISU
+        Mat threadhold_im=MDetector.getThresholdedImage();
+        imshow(THREADHOLD_VISU,threadhold_im);
+#endif
 #endif
         // Limit to 60hz
   		usleep(15000);
-
 	}
 }
 
