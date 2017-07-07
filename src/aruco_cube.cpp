@@ -40,15 +40,18 @@ void stable_marker::add_marker(Marker new_m){
 	if(new_m.id!=id)
 		return;
 	sliding_markers.push_front(new_m);
-	if(sliding_markers.size()>MAX_SLIDING_ARUCO)
+	sliding_timestamp.push_front(ros::Time::now());
+	if(sliding_markers.size()>MAX_SLIDING_ARUCO){
 		sliding_markers.pop_back();
+		sliding_timestamp.pop_back();
+	}
 
-	//chagement de Tvec pour prendre en compte l'offset
+	//changement de Tvec pour prendre en compte l'offset
 	Mat rot;
 	Rodrigues(sliding_markers.front().Rvec,rot);
 	sliding_markers.front().Tvec+=rot*trans_offset;
 
-	//chagement de Rvec pour prendre en compte l'offset
+	//changement de Rvec pour prendre en compte l'offset
 	rot*=rot_offset;
 	Rodrigues(rot,sliding_markers.front().Rvec);
 
@@ -59,6 +62,18 @@ Marker stable_marker::last(){
 	if(sliding_markers.size()>0)
 		return sliding_markers.front();
 	return Marker();
+}
+
+void stable_marker::clean_old(ros::Duration delta_max){
+	list<ros::Time>::iterator time = sliding_timestamp.end();
+	while(sliding_timestamp.size()!=0 && time!=sliding_timestamp.begin()){
+		time--;//pour choisir le temps suivant
+		ros::Duration delta=ros::Time::now()-(*time);
+		if(delta >delta_max ){
+			sliding_markers.pop_back();
+			sliding_timestamp.pop_back();
+		}
+	}
 }
 
 double stable_marker::variance_pos(){
@@ -162,8 +177,17 @@ void aruco_cube::add_marker(Marker new_m){
 }
 
 void aruco_cube::update_marker(vector<Marker> vect_m){
-	for(int i=0; i<vect_m.size();i++)
+	for(int i=0; i<vect_m.size();i++){
 		add_marker(vect_m[i]);
+	}
+	clean_time_old(ros::Duration(DEFAULT_USELESS_TIME));
+
+}
+
+void aruco_cube::clean_time_old(ros::Duration delta_max){
+	for(int i=0; i<FACE_CUBE_TOT;i++){
+		cube[i].clean_old(delta_max);
+	}
 }
 
 

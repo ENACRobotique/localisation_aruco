@@ -59,7 +59,7 @@ cv::Mat rot_mat(3, 3, cv::DataType<float>::type);
 CameraParameters TheCameraParameters;
 MarkerDetector MDetector;
 vector<Marker> TheMarkers;
-aruco_cube test_cube(13);
+aruco_cube test_cube(15);
 
 void cvTackBarEvents(int pos,void*);
 bool readCameraParameters(string TheIntrinsicFile,CameraParameters &CP,Size size);
@@ -235,9 +235,14 @@ int main(int argc,char **argv) {
 
         bool found = (TheMarkers.size()>0);
 
+        for(int i=0;i<FACE_CUBE_TOT;i++){
+        	cout<<"|"<< test_cube.cube[i].id<<":"<<test_cube.cube[i].sliding_markers.size();
+        }
+		cout<<endl;
         if (found) {
 			for(int i=0;i<FACE_CUBE_TOT;i++){
 				test_cube.cube[i].aff_cadre(&current_image,TheCameraParameters.CameraMatrix);
+
 			}
 
             x_t = -TheMarkers[0].Tvec.at<Vec3f>(0,0)[0];
