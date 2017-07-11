@@ -32,6 +32,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <aruco_cube.h>
 
 #define WIN_NAME "ROS ARUCO"
+//#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
 
 
@@ -131,6 +132,9 @@ int main(int argc,char **argv) {
 	char key=0;
 	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
+#ifdef FPS_TEST
+		ros::Time mesure_temps=ros::Time::now();
+#endif
    		key = waitKey(1);
         ros::spinOnce();
 #ifdef DEBUG
@@ -163,6 +167,11 @@ int main(int argc,char **argv) {
 #endif
         // Limit to 60hz
   		usleep(15000);
+#ifdef FPS_TEST
+		ros::Duration mesure_fps=ros::Time::now()-mesure_temps;
+		cout<<"Temps:"<<mesure_fps<<"\t";
+		cout<<"FPS:"<<(1/mesure_fps.toSec())<<endl;
+#endif
 	}
 }
 
