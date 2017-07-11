@@ -96,8 +96,8 @@ int main(int argc,char **argv) {
 	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
     cube_manager test_cube;
-    test_cube.push_back( aruco_cube(15,TheMarkerSize) );
-    test_cube.push_back( aruco_cube(16,TheMarkerSize) );
+    test_cube.push_back( aruco_cube(15) );
+    test_cube.push_back( aruco_cube(16) );
 
     //wait a image
     while (current_image.empty()) {

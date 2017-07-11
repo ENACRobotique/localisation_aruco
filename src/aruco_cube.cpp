@@ -178,20 +178,26 @@ void stable_marker::compute_all(){
 }
 
 
-void stable_marker::aff_slid(Mat * current_image,Mat CameraMatrix){
+void stable_marker::aff_slid(Mat * current_image,Mat CameraMatrix,double size_obj){
 	if(sliding_markers.size()==0)
 		return;
 
 	//params
 	vector<cv::Point3f> objectPoints;
-	float size_2=last().ssize/2;
+	float size_2;
+	if(size_obj<=0)
+		size_2=last().ssize/2;
+	else
+		size_2=size_obj/2;
 	float len_axe=size_2*4;
 	//oeil cub
 	objectPoints=Cadre3D(size_2);
-	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),true,Scalar(0,255,255),2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),
+				 true,Scalar(0,255,255),2);
 	//axes
 	objectPoints=Axes3D(len_axe);
-	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),true,Scalar(255,0,0),2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(objectPoints,M_rot,M_trans,CameraMatrix),
+			     true,Scalar(255,0,0),2);
 }
 
 Mat Rot_Face(int FACE_CUBE ){
@@ -208,14 +214,15 @@ Mat Rot_Face(int FACE_CUBE ){
 
 aruco_cube::aruco_cube():aruco_cube(-1){}
 
-aruco_cube::aruco_cube(int id_f,float mark_size){
+aruco_cube::aruco_cube(int id_f,float c_size){
 	id_front=id_f;
 	int id=id_front;
 
-	if(mark_size<=0)
-		mark_size=DEFAULT_MARKER_SIZE;
+	if(c_size<=0)
+		c_size=DEFAULT_CUBE_SIZE;
+	cube_size=c_size;
 
-	Mat t_off = (Mat_<float>(3,1) << 0,0,-mark_size/2);
+	Mat t_off = (Mat_<float>(3,1) << 0,0,-cube_size/2);
 	Mat r_off;
 
 	for(int i=0;i<FACE_CUBE_TOT;i++){
@@ -224,6 +231,7 @@ aruco_cube::aruco_cube(int id_f,float mark_size){
 		r_off = Rot_Face(i);
 		cube[i]=stable_marker(id,t_off,r_off);
 	}
+
 }
 
 void aruco_cube::add_marker(Marker new_m){
@@ -298,7 +306,7 @@ geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
 		return nul;
 	}
 	float x_t, y_t, z_t,roll,yaw,pitch;
-	x_t = -cube_trans.at<Vec3f>(0,0)[0];
+	x_t =  cube_trans.at<Vec3f>(0,0)[0];
 	y_t =  cube_trans.at<Vec3f>(0,0)[1];
 	z_t =  cube_trans.at<Vec3f>(0,0)[2];
 
@@ -338,13 +346,14 @@ void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
 		return;
 	if(!unique){
 		for(int i=0;i<FACE_CUBE_TOT;i++){
-			cube[i].aff_slid(current_image,CameraMatrix);
+			cube[i].aff_slid(current_image,CameraMatrix,cube_size);
 		}
 	}
-	vector<cv::Point3f>pts_aff=Cadre3D(m_size()/2);
+
+	vector<cv::Point3f>pts_aff=Cadre3D(cube_size/2);
 	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
 	//axes
-	pts_aff=Axes3D(m_size()*2);
+	pts_aff=Axes3D(cube_size*2);
 	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
 
 

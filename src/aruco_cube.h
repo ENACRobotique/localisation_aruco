@@ -88,7 +88,7 @@ public:
 	void compute_all();
 
 	//affichage
-	void aff_slid(Mat * current_image,Mat CameraMatrix);
+	void aff_slid(Mat * current_image,Mat CameraMatrix,double size_obj=-1);
 
 };
 
@@ -103,14 +103,15 @@ enum{
 Mat Rot_Face(int FACE_CUBE );
 
 #define DELTA_FACE 10
-#define DEFAULT_MARKER_SIZE 0.08
-#define DEFAULT_USELESS_TIME .10 //en s
+#define DEFAULT_CUBE_SIZE 0.073 //en m
+#define DEFAULT_USELESS_TIME .10 //en s => 10Hz
 
 class aruco_cube{
 public:
 	//attribut de fonctionement
 	int id_front=-1;
 	stable_marker cube[FACE_CUBE_TOT];
+	float cube_size;
 
 	//attruibuts de "sorties"
 	Mat cube_trans=Mat::zeros(3,1,CV_32F);
@@ -118,7 +119,7 @@ public:
 
 	//constructeur
 	aruco_cube();
-	aruco_cube(int id_f,float mark_size=-1);
+	aruco_cube(int id_f,float c_size=-1);
 
 	//ajout marker
 	void add_marker(Marker new_m);
