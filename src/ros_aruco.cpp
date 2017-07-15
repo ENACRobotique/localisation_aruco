@@ -32,9 +32,9 @@ or implied, of Rafael Muñoz Salinas.
 #include <aruco_cube.h>
 
 #define WIN_NAME "ROS ARUCO"
-//#define FPS_TEST
+#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
-
+//#define PRINT_POSE
 
 bool readArguments (string* top,string *File,float *Size, int argc,char **argv )
 {
@@ -77,9 +77,9 @@ int main(int argc,char **argv) {
 	ros::init(argc, argv, "aruco_cube_publisher");
 	ros::NodeHandle n;
     ros::spinOnce();
-
+#ifdef THREADHOLD_VISU
     int Thresmin,Thresmax;
-
+#endif
     //var de gestion des entrées
 	string topic;
 	string TheIntrinsicFile;
@@ -92,10 +92,10 @@ int main(int argc,char **argv) {
 		topic="/"+topic;
 		cout<<topic<<endl;
 		topic_pointeur=&topic;
-		//ic = ImageConverter();
 	}
 	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
+    //le gestionaire des cubes
     cube_manager test_cube;
     test_cube.push_back( aruco_cube(15,DEFAULT_CUBE_SIZE) );
     test_cube.push_back( aruco_cube(16,DEFAULT_CUBE_SIZE) );
@@ -116,9 +116,6 @@ int main(int argc,char **argv) {
 	// Create gui
 #ifdef THREADHOLD_VISU
 	cv::namedWindow(THREADHOLD_VISU, 1);
-#endif
-	cv::namedWindow(WIN_NAME, 1);
-
 	double inter1,inter2;
 	MDetector.getThresholdParams(inter1, inter2);
 	Thresmin=inter1;Thresmax=inter2;
@@ -127,17 +124,24 @@ int main(int argc,char **argv) {
 	cv::createTrackbar("Thresmin", WIN_NAME, &Thresmin, 100);
 	cv::createTrackbar("Thresmax", WIN_NAME, &Thresmax, 100);
 #endif
+	cv::namedWindow(WIN_NAME, 1);
 
+#endif
+#ifdef FPS_TEST
+	ros::Duration mesure_fps[4];
+	ros::Time mesure_temps;
+	cout<<"Flag: Lect:\t\tMarkerProc\tCubeProc"<<endl;
+#endif
 	signal(SIGINT, sig_stop);
 	char key=0;
 	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
 #ifdef FPS_TEST
-		ros::Time mesure_temps=ros::Time::now();
+		mesure_temps=ros::Time::now();
 #endif
    		key = waitKey(1);
         ros::spinOnce();
-#ifdef DEBUG
+#ifdef THREADHOLD_VISU
         MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
 #endif
         ic.getCurrentImage(&current_image);
@@ -147,16 +151,24 @@ int main(int argc,char **argv) {
             cout << ">>> Image EMPTY" << endl;
             continue;
         }
-
+#ifdef FPS_TEST
+		mesure_fps[0]=ros::Time::now()-mesure_temps;
+		mesure_temps=ros::Time::now();
+#endif
         // Detection of markers in the image passed
         MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
+#ifdef FPS_TEST
+		mesure_fps[1]=ros::Time::now()-mesure_temps;
+		mesure_temps=ros::Time::now();
+#endif
         test_cube.update_marker(TheMarkers);
         test_cube.compute_all();
-
         test_cube.publish_marcker_pose(pose_pub_markers,ic.timestamp);
-
         test_cube.aff_cube(&current_image,TheCameraParameters);
-
+#ifdef FPS_TEST
+		mesure_fps[2]=ros::Time::now()-mesure_temps;
+		mesure_temps=ros::Time::now();
+#endif
         // Show input with augmented information and the thresholded image
 #ifdef DEBUG
         cv::imshow(WIN_NAME, current_image);
@@ -165,12 +177,13 @@ int main(int argc,char **argv) {
         imshow(THREADHOLD_VISU,threadhold_im);
 #endif
 #endif
-        // Limit to 60hz
-  		usleep(15000);
+
 #ifdef FPS_TEST
-		ros::Duration mesure_fps=ros::Time::now()-mesure_temps;
-		cout<<"Temps:"<<mesure_fps<<"\t";
-		cout<<"FPS:"<<(1/mesure_fps.toSec())<<endl;
+		cout<<"\r";//pour ne pas pourrir le terminal
+		cout<<"Temps:";
+		for(int i=0;i<3;i++)
+			cout<<mesure_fps[i]*1000<<"\t";
+		cout<<"ms";
 #endif
 	}
 }

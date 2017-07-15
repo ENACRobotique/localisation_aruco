@@ -33,8 +33,6 @@
 using namespace aruco;
 using namespace cv;
 
-//#define PRINT_POSE
-
 template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
@@ -149,7 +147,6 @@ public:
 
 	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
 };
-
 
 // classe qui gère l'arrivée des images
 class ImageConverter{
