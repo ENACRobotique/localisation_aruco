@@ -151,7 +151,7 @@ public:
 };
 
 
-// classe qui gère l'arriver des images
+// classe qui gère l'arrivée des images
 class ImageConverter{
   Mat src_img;
   ros::NodeHandle nh_;
@@ -160,65 +160,17 @@ class ImageConverter{
 
   std::recursive_mutex * r_mutex;
 
-
   ros::Time last_frame;
 public:
   ros::Time timestamp;
 
-  ImageConverter() : it_(nh_)
-  {
-    // subscribe to input video feed and publish output video feed
-    image_sub_ = it_.subscribe("/cam1", 1, &ImageConverter::imageCb, this);
-    r_mutex=new std::recursive_mutex ();
-  }
+  ImageConverter();
+  ImageConverter(string *topic);
 
-  ImageConverter(string *topic) : it_(nh_)
-  {
-    // subscribe to input video feed and publish output video feed
-	  string default_top="/cam1";
-	if(topic==NULL){
-		topic=&default_top;
-	}
-	image_sub_ = it_.subscribe(*topic, 1, &ImageConverter::imageCb, this);
-	r_mutex=new std::recursive_mutex ();
-  }
+  ~ImageConverter();
 
-  ~ImageConverter()
-  {
-    image_sub_.shutdown();
-    printf(">> ROS Stopped Image Import \n");
-  }
-
-  void getCurrentImage(cv::Mat *input_image) {
-    while((timestamp.toSec() - last_frame.toSec()) <= 0) {
-        usleep(500);
-        ros::spinOnce();
-    }
-    (*r_mutex).lock();
-    *input_image = src_img;
-    last_frame = timestamp;
-    (*r_mutex).unlock();
-  }
-
-  void imageCb(const sensor_msgs::ImageConstPtr& msg)
-  {
-    ros::Time frame_time = ros::Time::now();
-    timestamp = frame_time;
-    cv_bridge::CvImagePtr cv_ptr;
-    try
-    {
-      cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-      ROS_ERROR("cv_bridge exception: %s", e.what());
-      (*r_mutex).unlock();
-      return;
-    }
-    (*r_mutex).lock();
-    src_img = cv_ptr->image;
-    (*r_mutex).unlock();
-  }
+  void getCurrentImage(cv::Mat *input_image);
+  void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
 };
 
