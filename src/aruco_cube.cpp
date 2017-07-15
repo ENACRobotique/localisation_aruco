@@ -315,10 +315,10 @@ geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
 	geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
 
 	// See: http://en.wikipedia.org/wiki/Flight_dynamics
-
+#ifdef PRINT_POSE
 	printf( "Angle >> roll: %5.3f pitch: %5.3f yaw: %5.3f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
 	printf( "Dist. >>  x_d: %5.3f   y_d: %5.3f z_d: %5.3f \n", x_t, y_t, z_t);
-
+#endif
 	// Now publish the pose message, remember the offsets
 	geometry_msgs::PoseStamped msg_ps;
 	geometry_msgs::Pose pose;
