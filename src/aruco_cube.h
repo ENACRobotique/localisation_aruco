@@ -41,7 +41,7 @@ Mat Rotation33(double alpha,double beta,double gamma);
 
 vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
 								   Mat rot,Mat trans,
-								   Mat CameraMatrix,Mat *distCoeffs=NULL);
+								   CameraParameters CameraMatrix);
 
 vector<Point2i>PTS2FtoPTS2I(vector<Point2f> vect);
 
@@ -88,7 +88,7 @@ public:
 	void compute_all();
 
 	//affichage
-	void aff_slid(Mat * current_image,Mat CameraMatrix,double size_obj=-1);
+	void aff_slid(Mat * current_image,CameraParameters CameraMatrix,double size_obj=-1);
 
 };
 
@@ -134,7 +134,7 @@ public:
 	geometry_msgs::PoseStamped  publish_marcker_pose(ros::Time stamp);
 
 	//affichage
-	void aff_cube(Mat * current_image,Mat CameraMatrix,bool unique=false );
+	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
 };
 
 class cube_manager{
@@ -145,7 +145,7 @@ public:
 	void compute_all();
 	void publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp);//TODO
 
-	void aff_cube(Mat * current_image,Mat CameraMatrix,bool unique=false );
+	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
 };
 
 

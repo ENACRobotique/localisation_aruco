@@ -27,21 +27,14 @@ Mat Rotation33(double alpha,double beta,double gamma){
 
 vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
 								   Mat rot,Mat trans,
-								   Mat CameraMatrix,Mat *distCoeffs){
-
-	if(distCoeffs==NULL){
-		distCoeffs= new Mat (4,1,cv::DataType<double>::type);
-		(*distCoeffs).at<double>(0) = 0;
-		(*distCoeffs).at<double>(1) = 0;
-		(*distCoeffs).at<double>(2) = 0;
-		(*distCoeffs).at<double>(3) = 0;
-	}
-	Mat vect_rot=rot;
+								   CameraParameters CameraMatrix){
+	Mat vect_rot;
+	rot.copyTo(vect_rot);
 	if(vect_rot.size()==Size(3,3))
 		Rodrigues(vect_rot,vect_rot);
 
 	vector<Point2f> projectedPoints;
-	projectPoints(objectPoints, vect_rot, trans ,CameraMatrix,*distCoeffs,projectedPoints);
+	projectPoints(objectPoints, vect_rot, trans ,CameraMatrix.CameraMatrix,CameraMatrix.Distorsion,projectedPoints);
 	return projectedPoints;
 
 
@@ -178,7 +171,7 @@ void stable_marker::compute_all(){
 }
 
 
-void stable_marker::aff_slid(Mat * current_image,Mat CameraMatrix,double size_obj){
+void stable_marker::aff_slid(Mat * current_image,CameraParameters CameraMatrix,double size_obj){
 	if(sliding_markers.size()==0)
 		return;
 
@@ -341,7 +334,7 @@ geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
 	return msg_ps;
 }
 
-void aruco_cube::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique){
+void aruco_cube::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique){
 	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 )
 		return;
 	if(!unique){
@@ -387,7 +380,7 @@ void cube_manager::compute_all(){
 	for(int i=0; i<cubes.size();i++)cubes[i].compute_all();
 }
 
-void  cube_manager::aff_cube(Mat * current_image,Mat CameraMatrix,bool unique ){
+void  cube_manager::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique ){
 	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,CameraMatrix,unique );
 }
 

@@ -155,7 +155,7 @@ int main(int argc,char **argv) {
 
         test_cube.publish_marcker_pose(pose_pub_markers,ic.timestamp);
 
-        test_cube.aff_cube(&current_image,TheCameraParameters.CameraMatrix);
+        test_cube.aff_cube(&current_image,TheCameraParameters);
 
         // Show input with augmented information and the thresholded image
 #ifdef DEBUG
