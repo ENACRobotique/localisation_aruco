@@ -31,6 +31,8 @@ or implied, of Rafael Muñoz Salinas.
 
 #include <aruco_cube.h>
 
+#include <sys/resource.h>
+
 #define WIN_NAME "ROS ARUCO"
 #define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
@@ -64,6 +66,8 @@ void sig_stop(int a)
 }
 
 int main(int argc,char **argv) {
+	//rend le process plus rapide, ou plutot moins interrompu
+	setpriority(PRIO_PROCESS, getpid(), 10);
 
 	cv::Mat current_image;
 
@@ -90,7 +94,6 @@ int main(int argc,char **argv) {
 	string *topic_pointeur=NULL;
 	if (topic != ""){
 		topic="/"+topic;
-		cout<<topic<<endl;
 		topic_pointeur=&topic;
 	}
 	ImageConverter ic  = ImageConverter(topic_pointeur);
@@ -100,6 +103,7 @@ int main(int argc,char **argv) {
     test_cube.push_back( aruco_cube(15,DEFAULT_CUBE_SIZE) );
     test_cube.push_back( aruco_cube(16,DEFAULT_CUBE_SIZE) );
 
+	signal(SIGINT, sig_stop);
     //wait a image
     while (current_image.empty()) {
         ros::spinOnce();
@@ -132,7 +136,6 @@ int main(int argc,char **argv) {
 	ros::Time mesure_temps;
 	cout<<"Flag: Lect:\t\tMarkerProc\tCubeProc"<<endl;
 #endif
-	signal(SIGINT, sig_stop);
 	char key=0;
 	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
