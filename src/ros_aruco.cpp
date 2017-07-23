@@ -33,27 +33,20 @@ or implied, of Rafael Muñoz Salinas.
 
 #include <sys/resource.h>
 
+#include <yaml-cpp/yaml.h>
+
 #define WIN_NAME "ROS ARUCO"
 #define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
 
-bool readArguments (string* top,string *File,float *Size, int argc,char **argv )
+bool readArguments (string *File, int argc,char **argv )
 {
-    if (argc<2) {
+    if (argc!=2) {
         cerr << ">>> Invalid number of arguments" << endl;
-        cerr << ">>> Usage: (topic) [intrinsics.yml] [size]" <<endl;
+        cerr << ">>> Usage: [config.yml] " <<endl;
         return false;
     }
-
-    (*top)=argv[1];
-
-    if (argc>=3)
-    	(*File)=argv[2];
-    if (argc>=4)
-        (*Size)=atof(argv[3]);
-    if (argc==3)
-        cerr<< ">>> NOTE: You need makersize to see 3d info!" <<endl;
-
+    (*File)=argv[1];
     return true;
 
 }
@@ -67,7 +60,6 @@ void sig_stop(int a)
 int main(int argc,char **argv) {
 	//rend le process plus rapide, ou plutot moins interrompu
 	setpriority(PRIO_PROCESS, getpid(), 10);
-
 
 	cv::Mat current_image;
 
@@ -88,9 +80,24 @@ int main(int argc,char **argv) {
 	string topic;
 	string TheIntrinsicFile;
 	float TheMarkerSize=-1;
-	if (readArguments(&topic,&TheIntrinsicFile, &TheMarkerSize, argc,argv)==false) {
+	float cube_size=-1;
+	if (readArguments(&TheIntrinsicFile,argc,argv)==false) {
 		return 0;
 	}
+
+	// Read camera parameters if passed and all other parameter
+	if (TheIntrinsicFile != "") {
+		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
+
+		YAML::Node config = YAML::LoadFile(TheIntrinsicFile);
+		if (config["cube_size"] &&config["marker_size"]&&config["topic"]){
+			cube_size=config["cube_size"].as<float>();
+			TheMarkerSize=config["marker_size"].as<float>();
+			topic=config["topic"].as<string>();
+		}
+		else throw invalid_argument( "the data YAML need more arguments!" );;
+	}
+
 	string *topic_pointeur=NULL;
 	if (topic != ""){
 		topic="/"+topic;
@@ -100,8 +107,8 @@ int main(int argc,char **argv) {
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
     //le gestionaire des cubes
     cube_manager test_cube;
-    test_cube.push_back( aruco_cube(15,DEFAULT_CUBE_SIZE) );
-    test_cube.push_back( aruco_cube(16,DEFAULT_CUBE_SIZE) );
+    test_cube.push_back( aruco_cube(15,cube_size) );
+    test_cube.push_back( aruco_cube(16,cube_size) );
 
 	signal(SIGINT, sig_stop);
     //wait a image
@@ -111,11 +118,8 @@ int main(int argc,char **argv) {
         usleep(1000);
     }
 
-	// Read camera parameters if passed
-	if (TheIntrinsicFile != "") {
-		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
+	if (TheIntrinsicFile != "")
 		TheCameraParameters.resize(current_image.size());
-	}
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU

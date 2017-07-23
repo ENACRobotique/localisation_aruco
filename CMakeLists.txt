@@ -4,7 +4,7 @@ PROJECT(cube_pos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport)
+FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport )
 
 SET(ARUCO_PATH /opt/ros/kinetic)
 SET(CMAKE_MODULE_PATH ${ARUCO_PATH}/lib/cmake)
@@ -41,6 +41,7 @@ target_link_libraries(cube_pos
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
+	yaml-cpp
 )
 
 add_definitions(-DDEBUG)
