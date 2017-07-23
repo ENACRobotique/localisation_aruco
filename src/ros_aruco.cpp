@@ -36,7 +36,6 @@ or implied, of Rafael Muñoz Salinas.
 #define WIN_NAME "ROS ARUCO"
 #define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
-//#define PRINT_POSE
 
 bool readArguments (string* top,string *File,float *Size, int argc,char **argv )
 {
@@ -68,6 +67,7 @@ void sig_stop(int a)
 int main(int argc,char **argv) {
 	//rend le process plus rapide, ou plutot moins interrompu
 	setpriority(PRIO_PROCESS, getpid(), 10);
+
 
 	cv::Mat current_image;
 
@@ -147,7 +147,8 @@ int main(int argc,char **argv) {
 #ifdef THREADHOLD_VISU
         MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
 #endif
-        ic.getCurrentImage(&current_image);
+
+		ic.getCurrentImage(&current_image);
 
         if (current_image.empty()) {
             usleep(2000);
@@ -174,10 +175,11 @@ int main(int argc,char **argv) {
 #endif
         // Show input with augmented information and the thresholded image
 #ifdef DEBUG
-        cv::imshow(WIN_NAME, current_image);
+        imshow(WIN_NAME, current_image);
 #ifdef THREADHOLD_VISU
         Mat threadhold_im=MDetector.getThresholdedImage();
         imshow(THREADHOLD_VISU,threadhold_im);
+
 #endif
 #endif
 

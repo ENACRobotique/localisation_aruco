@@ -93,6 +93,15 @@ stable_marker::stable_marker(int id_m,Mat t_off,Mat quat_off):stable_marker(id_m
 void stable_marker::add_marker(Marker new_m){
 	if(new_m.id!=id)
 		return;
+
+	//Verification que l'axe Z est visible (filtrage des arucos déformés)
+	Mat rot;
+	Rodrigues(new_m.Rvec,rot);
+	Mat Mtest=rot*(Mat_<float>(3, 1 ) <<0,0,1);
+	if(Mtest.at<float>(1,0)>0.1)
+		return;
+
+	//Ajout du marker
 	sliding_markers.push_front(new_m);
 	sliding_timestamp.push_front(ros::Time::now());
 	if(sliding_markers.size()>MAX_SLIDING_ARUCO){
@@ -101,15 +110,11 @@ void stable_marker::add_marker(Marker new_m){
 	}
 
 	//changement de Tvec pour prendre en compte l'offset
-	Mat rot;
-	Rodrigues(sliding_markers.front().Rvec,rot);
 	sliding_markers.front().Tvec+=rot*trans_offset;
 
 	//changement de Rvec pour prendre en compte l'offset
 	rot*=rot_offset;
 	Rodrigues(rot,sliding_markers.front().Rvec);
-
-
 }
 
 Marker stable_marker::last(){
