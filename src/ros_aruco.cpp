@@ -141,6 +141,7 @@ int main(int argc,char **argv) {
 	cout<<"Flag: Lect:\t\tMarkerProc\tCubeProc"<<endl;
 #endif
 	char key=0;
+//------------------LOOP----------------------------------------------------
 	// Capture until press ESC or until the end of the video
 	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
 #ifdef FPS_TEST
