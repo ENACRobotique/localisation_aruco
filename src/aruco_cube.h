@@ -64,6 +64,8 @@ public:
 	list<Marker> sliding_markers;
 	list<ros::Time> sliding_timestamp;
 	int id =-1;
+	//matrices de changement de repère pour tout traiter dans le référentiel cube
+	//initialiser par le cube contenant. marker->cube
 	Mat trans_offset=Mat::zeros(3,1,CV_32F);
 	Mat rot_offset= Mat::zeros(3,3,CV_32F);
 
@@ -74,7 +76,7 @@ public:
 	//constructeurs
 	stable_marker(){};
 	stable_marker(int id_m);
-	stable_marker(int id_m,Mat t_off,Mat quat_off);
+	stable_marker(int id_m,Mat t_off,Mat quat_off);//utiliser par la classe aruco_cube
 
 
 	//ajout et récupération de markers
@@ -85,7 +87,7 @@ public:
 	// calculs internes
 	float m_size();
 	float max_peri();
-	double variance_pos();
+	double variance_pos();//TODO
 	void compute_Trans_rot();
 	void compute_all();
 

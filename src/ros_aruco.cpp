@@ -36,7 +36,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <yaml-cpp/yaml.h>
 
 #define WIN_NAME "ROS ARUCO"
-#define FPS_TEST
+//#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
 
 bool readArguments (string *File, int argc,char **argv )
@@ -73,14 +73,15 @@ int main(int argc,char **argv) {
 	ros::init(argc, argv, "aruco_cube_publisher");
 	ros::NodeHandle n;
     ros::spinOnce();
-#ifdef THREADHOLD_VISU
-    int Thresmin,Thresmax;
-#endif
     //var de gestion des entrées
 	string topic;
 	string TheIntrinsicFile;
 	float TheMarkerSize=-1;
 	float cube_size=-1;
+
+	Mat rot_table=Mat::zeros(3,3,CV_32F);
+	Mat tra_table=Mat::zeros(3,1,CV_32F);
+
 	if (readArguments(&TheIntrinsicFile,argc,argv)==false) {
 		return 0;
 	}
@@ -88,14 +89,20 @@ int main(int argc,char **argv) {
 	// Read camera parameters if passed and all other parameter
 	if (TheIntrinsicFile != "") {
 		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
-
+		FileStorage fs2(TheIntrinsicFile, FileStorage::READ);
 		YAML::Node config = YAML::LoadFile(TheIntrinsicFile);
-		if (config["cube_size"] &&config["marker_size"]&&config["topic"]){
+		if (config["cube_size"] &&config["marker_size"]&&config["topic"]&&
+			!fs2["cam2table_rot"  ].empty() &&!fs2["cam2table_trans"].empty() ){
 			cube_size=config["cube_size"].as<float>();
 			TheMarkerSize=config["marker_size"].as<float>();
 			topic=config["topic"].as<string>();
+
+			fs2["cam2table_rot"  ]>>rot_table;
+			fs2["cam2table_trans"]>>tra_table;
+			rot_table.convertTo(rot_table,CV_32F);
+			tra_table.convertTo(tra_table,CV_32F);
 		}
-		else throw invalid_argument( "the data YAML need more arguments!" );;
+		else throw invalid_argument( "the data YAML need more arguments!" );
 	}
 
 	string *topic_pointeur=NULL;
@@ -123,6 +130,7 @@ int main(int argc,char **argv) {
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
+    int Thresmin,Thresmax;
 	cv::namedWindow(THREADHOLD_VISU, 1);
 	double inter1,inter2;
 	MDetector.getThresholdParams(inter1, inter2);
@@ -179,6 +187,24 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Show input with augmented information and the thresholded image
+
+		//---------------------------test-table-----------------------
+		vector<cv::Point3f> table;
+		table.push_back(Point3f(3,0,0));
+		table.push_back(Point3f(3,2,0));
+		table.push_back(Point3f(3,2,1));
+		table.push_back(Point3f(3,2,0));
+		table.push_back(Point3f(0,2,0));
+
+		EasyPolyLine(&current_image,Points3DtoCamPoints(table,rot_table,tra_table,TheCameraParameters),
+						 false,Scalar(255,255,255),1);
+
+		if(test_cube.cubes[1].m_size()>0){
+			Mat pos=rot_table.inv()*(test_cube.cubes[1].cube_trans-tra_table);
+			cout<<"POS:"<< pos.t()<<endl;
+		}
+		//---------------------------test-table-----------------------
+
 #ifdef DEBUG
         imshow(WIN_NAME, current_image);
 #ifdef THREADHOLD_VISU

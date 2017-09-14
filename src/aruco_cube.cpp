@@ -37,7 +37,6 @@ vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
 	projectPoints(objectPoints, vect_rot, trans ,CameraMatrix.CameraMatrix,CameraMatrix.Distorsion,projectedPoints);
 	return projectedPoints;
 
-
 }
 
 vector<Point2i>PTS2FtoPTS2I(vector<Point2f> vect){
