@@ -203,8 +203,7 @@ int main(int argc,char **argv) {
 
 #ifdef PLOT_POS
 #ifndef FPS_TEST
-		//cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
-        cout<<"TIME:"<< test_cube.cubes[1].current_time<<endl;
+		cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
 #endif
 #endif
 
