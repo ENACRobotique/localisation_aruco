@@ -117,13 +117,21 @@ public:
 	stable_marker cube[FACE_CUBE_TOT];
 	float cube_size;
 
+	//Placement de la cam % au ref monde
+	Mat rot_W2C=Mat::zeros(3,3,CV_32F);
+	Mat tra_W2C=Mat::zeros(3,1,CV_32F);
+
 	//attruibuts de "sorties"
-	Mat cube_trans=Mat::zeros(3,1,CV_32F);
-	Mat cube_rot  =Mat::zeros(3,3,CV_32F);
+	Mat cube_rotCam  =Mat::zeros(3,3,CV_32F);
+	Mat cube_transCam=Mat::zeros(3,1,CV_32F);
+
+	Mat cube_rotWorld  =Mat::zeros(3,3,CV_32F);
+	Mat cube_transWorld=Mat::zeros(3,1,CV_32F);
 
 	//constructeur
 	aruco_cube();
 	aruco_cube(int id_f,float c_size=-1);
+	aruco_cube(int id_f,float c_size,Mat RotWorld2Cam, Mat TransWorld2Cam);
 
 	//ajout marker
 	void add_marker(Marker new_m);
@@ -134,11 +142,13 @@ public:
 	double m_size();
 	float max_peri();
 	void compute_T_R();
+	void reproject2world();
 	void compute_all();
 	geometry_msgs::PoseStamped  publish_marcker_pose(ros::Time stamp);
 
 	//affichage
 	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
+	void aff_world(Mat * current_image,CameraParameters CameraMatrix);//affiche la table de jeu
 };
 
 class cube_manager{

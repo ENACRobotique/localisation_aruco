@@ -38,6 +38,7 @@ or implied, of Rafael Muñoz Salinas.
 #define WIN_NAME "ROS ARUCO"
 //#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
+#define PLOT_POS
 
 bool readArguments (string *File, int argc,char **argv )
 {
@@ -114,8 +115,8 @@ int main(int argc,char **argv) {
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
     //le gestionaire des cubes
     cube_manager test_cube;
-    test_cube.push_back( aruco_cube(15,cube_size) );
-    test_cube.push_back( aruco_cube(16,cube_size) );
+    test_cube.push_back( aruco_cube(15,cube_size,rot_table,tra_table) );
+    test_cube.push_back( aruco_cube(16,cube_size,rot_table,tra_table) );
 
 	signal(SIGINT, sig_stop);
     //wait a image
@@ -182,28 +183,14 @@ int main(int argc,char **argv) {
         test_cube.compute_all();
         test_cube.publish_marcker_pose(pose_pub_markers,ic.timestamp);
         test_cube.aff_cube(&current_image,TheCameraParameters);
+        test_cube.cubes[0].aff_world(&current_image,TheCameraParameters);
 #ifdef FPS_TEST
 		mesure_fps[2]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
         // Show input with augmented information and the thresholded image
 
-		//---------------------------test-table-----------------------
-		vector<cv::Point3f> table;
-		table.push_back(Point3f(3,0,0));
-		table.push_back(Point3f(3,2,0));
-		table.push_back(Point3f(3,2,1));
-		table.push_back(Point3f(3,2,0));
-		table.push_back(Point3f(0,2,0));
 
-		EasyPolyLine(&current_image,Points3DtoCamPoints(table,rot_table,tra_table,TheCameraParameters),
-						 false,Scalar(255,255,255),1);
-
-		if(test_cube.cubes[1].m_size()>0){
-			Mat pos=rot_table.inv()*(test_cube.cubes[1].cube_trans-tra_table);
-			cout<<"POS:"<< pos.t()<<endl;
-		}
-		//---------------------------test-table-----------------------
 
 #ifdef DEBUG
         imshow(WIN_NAME, current_image);
@@ -211,6 +198,12 @@ int main(int argc,char **argv) {
         Mat threadhold_im=MDetector.getThresholdedImage();
         imshow(THREADHOLD_VISU,threadhold_im);
 
+#endif
+#endif
+
+#ifdef PLOT_POS
+#ifndef FPS_TEST
+		cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
 #endif
 #endif
 

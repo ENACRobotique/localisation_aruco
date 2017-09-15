@@ -231,6 +231,12 @@ aruco_cube::aruco_cube(int id_f,float c_size){
 
 }
 
+aruco_cube::aruco_cube(int id_f,float c_size,Mat RotWorld2Cam, Mat TransWorld2Cam)
+			:aruco_cube(id_f,c_size){
+	rot_W2C = RotWorld2Cam;
+	tra_W2C = TransWorld2Cam;
+}
+
 void aruco_cube::add_marker(Marker new_m){
 	if((new_m.id-id_front)%DELTA_FACE!=0 )
 		return ;
@@ -257,19 +263,24 @@ void aruco_cube::clean_time_old(ros::Duration delta_max){
 void aruco_cube::compute_T_R(){
 	for(int i=0;i<FACE_CUBE_TOT;i++)cube[i].compute_Trans_rot();
 	float tot=0;
-	cube_trans=Mat::zeros(3,1,CV_32F);
-	cube_rot  =Mat::zeros(3,3,CV_32F);
+	cube_transCam=Mat::zeros(3,1,CV_32F);
+	cube_rotCam  =Mat::zeros(3,3,CV_32F);
 	for(int i=0;i<FACE_CUBE_TOT;i++){
 		if( countNonZero( cube[i].M_rot!=Mat::zeros(3,3,CV_32F) ) > 0 ){
-			cube_trans+=cube[i].M_trans;
-			cube_rot  +=cube[i].M_rot;
+			cube_transCam+=cube[i].M_trans;
+			cube_rotCam  +=cube[i].M_rot;
 			tot++;
 		}
 	}
 	if(tot>0){
-		cube_trans/=tot;
-		cube_rot  /=tot;
+		cube_transCam/=tot;
+		cube_rotCam  /=tot;
 	}
+}
+
+void aruco_cube::reproject2world(){
+	cube_transWorld=rot_W2C.inv()*(cube_transCam-tra_W2C);
+	cube_rotWorld  =rot_W2C.inv()* cube_rotCam;
 }
 
 double aruco_cube::m_size(){
@@ -293,28 +304,29 @@ float aruco_cube::max_peri(){
 
 void aruco_cube::compute_all(){
 	compute_T_R();
+	reproject2world();
 }
 
 
 geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
-	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
+	if(countNonZero( cube_rotCam!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
 		geometry_msgs::PoseStamped nul;
 		nul.header.frame_id="-1";
 		return nul;
 	}
 	float x_t, y_t, z_t,roll,yaw,pitch;
-	x_t =  cube_trans.at<Vec3f>(0,0)[0];
-	y_t =  cube_trans.at<Vec3f>(0,0)[1];
-	z_t =  cube_trans.at<Vec3f>(0,0)[2];
+	x_t =  cube_transCam.at<Vec3f>(0,0)[0];
+	y_t =  cube_transCam.at<Vec3f>(0,0)[1];
+	z_t =  cube_transCam.at<Vec3f>(0,0)[2];
 
-	yaw   =  atan2(cube_rot.at<float>(1,0), cube_rot.at<float>(0,0));
-	if(abs(cube_rot.at<float>(2,2))>10e-3)
-		roll  =  atan2(cube_rot.at<float>(2,1), cube_rot.at<float>(2,2));
+	yaw   =  atan2(cube_rotCam.at<float>(1,0), cube_rotCam.at<float>(0,0));
+	if(abs(cube_rotCam.at<float>(2,2))>10e-3)
+		roll  =  atan2(cube_rotCam.at<float>(2,1), cube_rotCam.at<float>(2,2));
 	else
-		roll  = M_PI*sgn( cube_rot.at<float>(2,1) );
-	double square=pow( pow(cube_rot.at<float>(2,1),2)+
-					   pow(cube_rot.at<float>(2,2),2) ,.5);
-	pitch =  atan2(-cube_rot.at<float>(2,0), square);
+		roll  = M_PI*sgn( cube_rotCam.at<float>(2,1) );
+	double square=pow( pow(cube_rotCam.at<float>(2,1),2)+
+					   pow(cube_rotCam.at<float>(2,2),2) ,.5);
+	pitch =  atan2(-cube_rotCam.at<float>(2,0), square);
 
 	geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
 
@@ -339,7 +351,7 @@ geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
 }
 
 void aruco_cube::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique){
-	if(countNonZero( cube_rot!=Mat::zeros(3,3,CV_32F) ) == 0 )
+	if(countNonZero( cube_rotCam!=Mat::zeros(3,3,CV_32F) ) == 0 )
 		return;
 	if(!unique){
 		for(int i=0;i<FACE_CUBE_TOT;i++){
@@ -348,10 +360,10 @@ void aruco_cube::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool
 	}
 
 	vector<cv::Point3f>pts_aff=Cadre3D(cube_size/2);
-	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rotCam,cube_transCam,CameraMatrix),true,Scalar(0,255,0),2);
 	//axes
 	pts_aff=Axes3D(cube_size*2);
-	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rot,cube_trans,CameraMatrix),true,Scalar(0,255,0),2);
+	EasyPolyLine(current_image,Points3DtoCamPoints(pts_aff,cube_rotCam,cube_transCam,CameraMatrix),true,Scalar(0,255,0),2);
 
 
 	char id_str[3];
@@ -360,7 +372,7 @@ void aruco_cube::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool
 	//procection 3D => 2D cam
 	vector<cv::Point3f> objectPoints;
 	objectPoints.push_back(Point3f(0     , 0      ,0     ));
-	vector<Point2f> projectedPoints=Points3DtoCamPoints(objectPoints,cube_rot,cube_trans,CameraMatrix);
+	vector<Point2f> projectedPoints=Points3DtoCamPoints(objectPoints,cube_rotCam,cube_transCam,CameraMatrix);
 	Point2d coin_bas_gauche_text=projectedPoints[0];
 
 	float peri=max_peri();
@@ -371,6 +383,17 @@ void aruco_cube::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool
 
 }
 
+void aruco_cube::aff_world(Mat * current_image,CameraParameters CameraMatrix){
+	vector<cv::Point3f> table;
+	table.push_back(Point3f(3,0,0));
+	table.push_back(Point3f(3,2,0));
+	table.push_back(Point3f(3,2,1));
+	table.push_back(Point3f(3,2,0));
+	table.push_back(Point3f(0,2,0));
+	EasyPolyLine(current_image,Points3DtoCamPoints(table,rot_W2C,tra_W2C,CameraMatrix),
+					 false,Scalar(255,255,255),1);
+
+}
 
 void cube_manager::push_back(aruco_cube aru_cub){
 	cubes.push_back(aru_cub);
