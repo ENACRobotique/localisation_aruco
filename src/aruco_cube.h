@@ -124,6 +124,7 @@ public:
 	//attruibuts de "sorties"
 	Mat cube_rotCam  =Mat::zeros(3,3,CV_32F);
 	Mat cube_transCam=Mat::zeros(3,1,CV_32F);
+	ros::Time current_time=ros::TIME_MIN;
 
 	Mat cube_rotWorld  =Mat::zeros(3,3,CV_32F);
 	Mat cube_transWorld=Mat::zeros(3,1,CV_32F);
@@ -141,10 +142,11 @@ public:
 	//calculs
 	double m_size();
 	float max_peri();
+	ros::Time newest_time();
 	void compute_T_R();
 	void reproject2world();
 	void compute_all();
-	geometry_msgs::PoseStamped  publish_marcker_pose(ros::Time stamp);
+	geometry_msgs::PoseStamped  marcker_pose();
 
 	//affichage
 	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
@@ -157,7 +159,7 @@ public:
 	void push_back(aruco_cube aru_cub);
 	void update_marker(vector<Marker> vect_m);
 	void compute_all();
-	void publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp);//TODO
+	void publish_marcker_pose(ros::Publisher pose_pub_markers);//TODO
 
 	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
 };

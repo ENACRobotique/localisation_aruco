@@ -181,7 +181,7 @@ int main(int argc,char **argv) {
 #endif
         test_cube.update_marker(TheMarkers);
         test_cube.compute_all();
-        test_cube.publish_marcker_pose(pose_pub_markers,ic.timestamp);
+        test_cube.publish_marcker_pose(pose_pub_markers);
         test_cube.aff_cube(&current_image,TheCameraParameters);
         test_cube.cubes[0].aff_world(&current_image,TheCameraParameters);
 #ifdef FPS_TEST
@@ -203,7 +203,8 @@ int main(int argc,char **argv) {
 
 #ifdef PLOT_POS
 #ifndef FPS_TEST
-		cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
+		//cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
+        cout<<"TIME:"<< test_cube.cubes[1].current_time<<endl;
 #endif
 #endif
 

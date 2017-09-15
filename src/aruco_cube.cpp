@@ -302,13 +302,29 @@ float aruco_cube::max_peri(){
 	return max;
 }
 
+ros::Time aruco_cube::newest_time(){
+	ros::Time res=ros::TIME_MIN;
+
+	for(int i=0;i<FACE_CUBE_TOT;i++){
+		if(cube[i].sliding_timestamp.size()>0){
+			if( res.toSec()<cube[i].sliding_timestamp.front().toSec() )
+				res= cube[i].sliding_timestamp.front();
+		}
+	}
+	return res;
+}
+
 void aruco_cube::compute_all(){
+	ros::Time time_comp=newest_time();
+	if(time_comp!=ros::TIME_MIN)
+		current_time=time_comp;
+
 	compute_T_R();
 	reproject2world();
 }
 
 
-geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
+geometry_msgs::PoseStamped  aruco_cube::marcker_pose(){
 	if(countNonZero( cube_rotCam!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
 		geometry_msgs::PoseStamped nul;
 		nul.header.frame_id="-1";
@@ -341,7 +357,7 @@ geometry_msgs::PoseStamped  aruco_cube::publish_marcker_pose(ros::Time stamp){
 
 	//m.id = id_front;
 	msg_ps.header.frame_id =to_string(id_front);
-	msg_ps.header.stamp = stamp;
+	msg_ps.header.stamp = current_time;
 	pose.position.x = x_t;
 	pose.position.y = y_t;
 	pose.position.z = z_t;
@@ -411,12 +427,13 @@ void  cube_manager::aff_cube(Mat * current_image,CameraParameters CameraMatrix,b
 	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,CameraMatrix,unique );
 }
 
-void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers,ros::Time stamp){
+void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers){
 	for(int i=0; i<cubes.size();i++){
-		geometry_msgs::PoseStamped msg=cubes[i].publish_marcker_pose(stamp);
+		geometry_msgs::PoseStamped msg=cubes[i].marcker_pose();
 		if(msg.header.frame_id!="-1")
 			pose_pub_markers.publish(msg);
 	}
+	ros::spinOnce();
 }
 
 
