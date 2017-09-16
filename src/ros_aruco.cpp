@@ -179,7 +179,7 @@ int main(int argc,char **argv) {
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
-        test_cube.update_marker(TheMarkers);
+        test_cube.update_marker(TheMarkers,ic.timestamp);
         test_cube.compute_all();
         test_cube.publish_marcker_pose(pose_pub_markers);
         test_cube.aff_cube(&current_image,TheCameraParameters);

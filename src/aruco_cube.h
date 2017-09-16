@@ -80,7 +80,7 @@ public:
 
 
 	//ajout et récupération de markers
-	void add_marker(Marker new_m);
+	void add_marker(Marker new_m,ros::Time time_marker=ros::Time::now());
 	Marker last();
 	void clean_old(ros::Duration delta_max);
 
@@ -135,8 +135,8 @@ public:
 	aruco_cube(int id_f,float c_size,Mat RotWorld2Cam, Mat TransWorld2Cam);
 
 	//ajout marker
-	void add_marker(Marker new_m);
-	void update_marker(vector<Marker> vect_m);
+	void add_marker(Marker new_m,ros::Time time_marker=ros::Time::now());
+	void update_marker(vector<Marker> vect_m,ros::Time time_marker=ros::Time::now());
 	void clean_time_old(ros::Duration delta_max);
 
 	//calculs
@@ -157,7 +157,7 @@ class cube_manager{
 public:
 	vector<aruco_cube>cubes;
 	void push_back(aruco_cube aru_cub);
-	void update_marker(vector<Marker> vect_m);
+	void update_marker(vector<Marker> vect_m,ros::Time time_marker=ros::Time::now());
 	void compute_all();
 	void publish_marcker_pose(ros::Publisher pose_pub_markers);//TODO
 

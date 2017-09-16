@@ -89,7 +89,7 @@ stable_marker::stable_marker(int id_m,Mat t_off,Mat quat_off):stable_marker(id_m
 		rot_offset=quat_off;
 }
 
-void stable_marker::add_marker(Marker new_m){
+void stable_marker::add_marker(Marker new_m,ros::Time time_marker){
 	if(new_m.id!=id)
 		return;
 
@@ -102,7 +102,7 @@ void stable_marker::add_marker(Marker new_m){
 
 	//Ajout du marker
 	sliding_markers.push_front(new_m);
-	sliding_timestamp.push_front(ros::Time::now());
+	sliding_timestamp.push_front(time_marker);
 	if(sliding_markers.size()>MAX_SLIDING_ARUCO){
 		sliding_markers.pop_back();
 		sliding_timestamp.pop_back();
@@ -237,18 +237,18 @@ aruco_cube::aruco_cube(int id_f,float c_size,Mat RotWorld2Cam, Mat TransWorld2Ca
 	tra_W2C = TransWorld2Cam;
 }
 
-void aruco_cube::add_marker(Marker new_m){
+void aruco_cube::add_marker(Marker new_m,ros::Time time_marker){
 	if((new_m.id-id_front)%DELTA_FACE!=0 )
 		return ;
 	int id=(new_m.id-id_front)/DELTA_FACE;
 	if(id>=FACE_CUBE_TOT )
 		return ;
-	cube[id].add_marker(new_m);
+	cube[id].add_marker(new_m,time_marker);
 }
 
-void aruco_cube::update_marker(vector<Marker> vect_m){
+void aruco_cube::update_marker(vector<Marker> vect_m,ros::Time time_marker){
 	for(int i=0; i<vect_m.size();i++){
-		add_marker(vect_m[i]);
+		add_marker(vect_m[i],time_marker);
 	}
 	clean_time_old(ros::Duration(DEFAULT_USELESS_TIME));
 
@@ -415,8 +415,8 @@ void cube_manager::push_back(aruco_cube aru_cub){
 	cubes.push_back(aru_cub);
 }
 
-void cube_manager::update_marker(vector<Marker> vect_m){
-	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m);
+void cube_manager::update_marker(vector<Marker> vect_m,ros::Time time_marker){
+	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m,time_marker);
 }
 
 void cube_manager::compute_all(){
