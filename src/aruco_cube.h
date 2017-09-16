@@ -124,10 +124,11 @@ public:
 	//attruibuts de "sorties"
 	Mat cube_rotCam  =Mat::zeros(3,3,CV_32F);
 	Mat cube_transCam=Mat::zeros(3,1,CV_32F);
-	ros::Time current_time=ros::TIME_MIN;
 
 	Mat cube_rotWorld  =Mat::zeros(3,3,CV_32F);
 	Mat cube_transWorld=Mat::zeros(3,1,CV_32F);
+
+	ros::Time current_time=ros::TIME_MIN;
 
 	//constructeur
 	aruco_cube();

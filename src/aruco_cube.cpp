@@ -325,24 +325,24 @@ void aruco_cube::compute_all(){
 
 
 geometry_msgs::PoseStamped  aruco_cube::marcker_pose(){
-	if(countNonZero( cube_rotCam!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
+	if(countNonZero( cube_rotWorld!=Mat::zeros(3,3,CV_32F) ) == 0 || !ros::ok()){
 		geometry_msgs::PoseStamped nul;
 		nul.header.frame_id="-1";
 		return nul;
 	}
 	float x_t, y_t, z_t,roll,yaw,pitch;
-	x_t =  cube_transCam.at<Vec3f>(0,0)[0];
-	y_t =  cube_transCam.at<Vec3f>(0,0)[1];
-	z_t =  cube_transCam.at<Vec3f>(0,0)[2];
+	x_t =  cube_transWorld.at<Vec3f>(0,0)[0];
+	y_t =  cube_transWorld.at<Vec3f>(0,0)[1];
+	z_t =  cube_transWorld.at<Vec3f>(0,0)[2];
 
-	yaw   =  atan2(cube_rotCam.at<float>(1,0), cube_rotCam.at<float>(0,0));
-	if(abs(cube_rotCam.at<float>(2,2))>10e-3)
-		roll  =  atan2(cube_rotCam.at<float>(2,1), cube_rotCam.at<float>(2,2));
+	yaw   =  atan2(cube_rotWorld.at<float>(1,0), cube_rotWorld.at<float>(0,0));
+	if(abs(cube_rotWorld.at<float>(2,2))>10e-3)
+		roll  =  atan2(cube_rotWorld.at<float>(2,1), cube_rotWorld.at<float>(2,2));
 	else
-		roll  = M_PI*sgn( cube_rotCam.at<float>(2,1) );
-	double square=pow( pow(cube_rotCam.at<float>(2,1),2)+
-					   pow(cube_rotCam.at<float>(2,2),2) ,.5);
-	pitch =  atan2(-cube_rotCam.at<float>(2,0), square);
+		roll  = M_PI*sgn( cube_rotWorld.at<float>(2,1) );
+	double square=pow( pow(cube_rotWorld.at<float>(2,1),2)+
+					   pow(cube_rotWorld.at<float>(2,2),2) ,.5);
+	pitch =  atan2(-cube_rotWorld.at<float>(2,0), square);
 
 	geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
 
