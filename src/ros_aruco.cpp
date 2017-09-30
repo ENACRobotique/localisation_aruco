@@ -66,9 +66,6 @@ int main(int argc,char **argv) {
 
 	//params Marker et aruco_cube
 	CameraParameters TheCameraParameters;
-	MarkerDetector MDetector;
-	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
-	vector<Marker> TheMarkers;
 
     // ROS messaging init
 	ros::init(argc, argv, "aruco_cube_publisher");
@@ -113,10 +110,6 @@ int main(int argc,char **argv) {
 	}
 	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
-    //le gestionaire des cubes
-    cube_manager test_cube;
-    test_cube.push_back( aruco_cube(15,cube_size,rot_table,tra_table) );
-    test_cube.push_back( aruco_cube(16,cube_size,rot_table,tra_table) );
 
 	signal(SIGINT, sig_stop);
     //wait a image
@@ -128,6 +121,11 @@ int main(int argc,char **argv) {
 
 	if (TheIntrinsicFile != "")
 		TheCameraParameters.resize(current_image.size());
+
+    //le gestionaire des cubes
+	vector<int> id_cubes={15,16};
+    cube_manager test_cube(TheMarkerSize,cube_size,TheCameraParameters,rot_table,tra_table,
+    						id_cubes);
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
@@ -174,16 +172,15 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Detection of markers in the image passed
-        MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
+        test_cube.DetectUpdate(current_image,ic.timestamp);
 #ifdef FPS_TEST
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
-        test_cube.update_marker(TheMarkers,ic.timestamp);
         test_cube.compute_all();
         test_cube.publish_marcker_pose(pose_pub_markers);
-        test_cube.aff_cube(&current_image,TheCameraParameters);
-        test_cube.cubes[0].aff_world(&current_image,TheCameraParameters);
+        test_cube.aff_cube(&current_image);
+        test_cube.aff_world(&current_image);
 #ifdef FPS_TEST
 		mesure_fps[2]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();

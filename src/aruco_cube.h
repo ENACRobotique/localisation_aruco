@@ -159,6 +159,9 @@ public:
 
 class cube_manager{
 public:
+	CameraParameters TheCameraParameters;
+	float TheMarkerSize=-1;
+	MarkerDetector MDetector;
 	vector<aruco_cube>cubes;
 
 	//Masque d'optimisation
@@ -166,12 +169,19 @@ public:
 
 	void push_back(aruco_cube aru_cub);
 	void update_marker(vector<Marker> vect_m,ros::Time time_marker=ros::Time::now());
+	void DetectUpdate(Mat current_image,ros::Time im_time);
 	void compute_all();
 	void publish_marcker_pose(ros::Publisher pose_pub_markers);
 
 	void UpdateOptiMask();
 
-	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
+	void aff_cube(Mat * current_image,bool unique=false );
+	void aff_world(Mat *current_image);
+
+	//Constructeur
+	cube_manager(float MarkSize,CameraParameters CamPara);
+	cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,
+			Mat rot_table,Mat tra_table,vector<int> cube_ids);
 };
 
 // classe qui gère l'arrivée des images

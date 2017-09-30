@@ -456,13 +456,45 @@ void cube_manager::update_marker(vector<Marker> vect_m,ros::Time time_marker){
 	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m,time_marker);
 }
 
+void cube_manager::DetectUpdate(Mat current_image,ros::Time im_time){
+	vector<Marker> TheMarkers;
+    MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
+    update_marker(TheMarkers,im_time);
+}
+
 void cube_manager::compute_all(){
 	for(int i=0; i<cubes.size();i++)cubes[i].compute_all();
 }
 
-void  cube_manager::aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique ){
-	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,CameraMatrix,unique );
+void  cube_manager::aff_cube(Mat * current_image,bool unique ){
+	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,TheCameraParameters,unique );
 }
+
+void cube_manager::aff_world(Mat *current_image){
+	if(cubes.size()==0)
+		return;
+	cubes[0].aff_world(current_image,TheCameraParameters);
+}
+
+
+cube_manager::cube_manager(float MarkSize,CameraParameters CamPara){
+	TheMarkerSize=MarkSize;
+	TheCameraParameters=CamPara;
+	Mat mask(TheCameraParameters.CamSize, CV_8UC3, Scalar::all(0));
+	mask.copyTo(OptimisationMask);
+	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
+}
+
+
+cube_manager::
+cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,
+		Mat rot_table,Mat tra_table,vector<int> cube_ids)
+						:cube_manager(MarkSize,CamPara){
+	for(int i=0;i<cube_ids.size();i++){
+		cubes.push_back(aruco_cube(cube_ids[i],cube_size,rot_table,tra_table));
+	}
+}
+
 
 void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers){
 	for(int i=0; i<cubes.size();i++){
@@ -474,12 +506,13 @@ void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers){
 }
 
 void  cube_manager::UpdateOptiMask(){
-	OptimisationMask(OptimisationMask.size(), CV_8UC3, Scalar::all(0));
+	Mat mask(OptimisationMask.size(), CV_8UC3, Scalar::all(0));
 
 	for(int i=0; i< cubes.size();i++){
 		Rect2d box=cubes[i].WatchingBindingBox(OptimisationMask.size);
-		OptimisationMask(box).setTo(Scalar::all(255));
+		mask(box).setTo(Scalar::all(255));
 	}
+	mask.copyTo(OptimisationMask);
 }
 
 ImageConverter::ImageConverter() : it_(nh_)
