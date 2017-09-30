@@ -473,6 +473,14 @@ void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers){
 	ros::spinOnce();
 }
 
+void  cube_manager::UpdateOptiMask(){
+	OptimisationMask(OptimisationMask.size(), CV_8UC3, Scalar::all(0));
+
+	for(int i=0; i< cubes.size();i++){
+		Rect2d box=cubes[i].WatchingBindingBox(OptimisationMask.size);
+		OptimisationMask(box).setTo(Scalar::all(255));
+	}
+}
 
 ImageConverter::ImageConverter() : it_(nh_)
 {

@@ -160,10 +160,16 @@ public:
 class cube_manager{
 public:
 	vector<aruco_cube>cubes;
+
+	//Masque d'optimisation
+	Mat OptimisationMask;
+
 	void push_back(aruco_cube aru_cub);
 	void update_marker(vector<Marker> vect_m,ros::Time time_marker=ros::Time::now());
 	void compute_all();
-	void publish_marcker_pose(ros::Publisher pose_pub_markers);//TODO
+	void publish_marcker_pose(ros::Publisher pose_pub_markers);
+
+	void UpdateOptiMask();
 
 	void aff_cube(Mat * current_image,CameraParameters CameraMatrix,bool unique=false );
 };
