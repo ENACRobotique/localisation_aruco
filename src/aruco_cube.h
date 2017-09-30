@@ -87,6 +87,7 @@ public:
 	// calculs internes
 	float m_size();
 	float max_peri();
+	Point2f CentreInIm();
 	double variance_pos();//TODO
 	void compute_Trans_rot();
 	void compute_all();
@@ -143,6 +144,8 @@ public:
 	//calculs
 	double m_size();
 	float max_peri();
+	Point2f CentreInIm();
+	Rect2d WatchingBindingBox(MatSize im_size);
 	ros::Time newest_time();
 	void compute_T_R();
 	void reproject2world();

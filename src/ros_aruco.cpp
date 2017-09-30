@@ -38,7 +38,7 @@ or implied, of Rafael Muñoz Salinas.
 #define WIN_NAME "ROS ARUCO"
 //#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
-#define PLOT_POS
+//#define PLOT_POS
 
 bool readArguments (string *File, int argc,char **argv )
 {
@@ -190,9 +190,17 @@ int main(int argc,char **argv) {
 #endif
         // Show input with augmented information and the thresholded image
 
+		Rect2d box=test_cube.cubes[1].WatchingBindingBox(current_image.size);
 
 
+		Mat mask(current_image.size(), CV_8UC3, Scalar::all(0));
+		mask(box).setTo(Scalar::all(255));
+		Mat test;
+		current_image.copyTo(test,mask);
+		if(box!=Rect2d(0,0,0,0))
+			imshow("test_flo", test);
 #ifdef DEBUG
+
         imshow(WIN_NAME, current_image);
 #ifdef THREADHOLD_VISU
         Mat threadhold_im=MDetector.getThresholdedImage();

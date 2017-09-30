@@ -150,6 +150,17 @@ float stable_marker::max_peri(){
 	return max;
 }
 
+
+Point2f stable_marker::CentreInIm(){
+	Point2f res=Point2f(0,0);
+	for(list<Marker>::iterator i=sliding_markers.begin();i!=sliding_markers.end();i++){
+		res+=(*i).getCenter();
+	}
+	if(sliding_markers.size()!=0)
+		res/=(int)sliding_markers.size();
+	return res;
+}
+
 double stable_marker::variance_pos(){
 	double tot=0;
 	for(list<Marker>::iterator m = sliding_markers.begin();m!=sliding_markers.end();m++){
@@ -301,6 +312,32 @@ float aruco_cube::max_peri(){
 	}
 	return max;
 }
+
+Point2f aruco_cube::CentreInIm(){
+	Point2f res=Point2f(0,0);
+	int compt=0;
+	for(int i=0 ;i<FACE_CUBE_TOT;i++){
+		Point2f inter=cube[i].CentreInIm();
+		if(inter!=Point2f(0,0)){
+			compt++;
+			res+=inter;
+		}
+	}
+	if(compt!=0)
+		res/=compt;
+	return res;
+}
+
+Rect2d  aruco_cube::WatchingBindingBox(MatSize im_size){
+	float cote=max_peri()/2;
+	Point2f centre=CentreInIm();
+	Rect2d res = Rect2d(max((int)(centre.x-cote),0),
+			  	  	    max((int)(centre.y-cote),0),
+			            min((int)(cote*2),im_size[1]-(int)(centre.x-cote)),
+			            min((int)(cote*2),im_size[0]-(int)(centre.y-cote)));
+	return res;
+}
+
 
 ros::Time aruco_cube::newest_time(){
 	ros::Time res=ros::TIME_MIN;
