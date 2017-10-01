@@ -36,7 +36,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <yaml-cpp/yaml.h>
 
 #define WIN_NAME "ROS ARUCO"
-//#define FPS_TEST
+#define FPS_TEST
 //#define THREADHOLD_VISU "THRESHOLD IMAGE"
 //#define PLOT_POS
 
@@ -57,7 +57,6 @@ void sig_stop(int a)
 {
 	allowed=false;
 }
-
 int main(int argc,char **argv) {
 	//rend le process plus rapide, ou plutot moins interrompu
 	setpriority(PRIO_PROCESS, getpid(), 10);
@@ -84,7 +83,7 @@ int main(int argc,char **argv) {
 		return 0;
 	}
 
-	// Read camera parameters if passed and all other parameter
+	// Read camera parameters if passed and all others parameters
 	if (TheIntrinsicFile != "") {
 		TheCameraParameters.readFromXMLFile(TheIntrinsicFile);
 		FileStorage fs2(TheIntrinsicFile, FileStorage::READ);
@@ -93,7 +92,7 @@ int main(int argc,char **argv) {
 			!fs2["cam2table_rot"  ].empty() &&!fs2["cam2table_trans"].empty() ){
 			cube_size=config["cube_size"].as<float>();
 			TheMarkerSize=config["marker_size"].as<float>();
-			topic=config["topic"].as<string>();
+			topic="/"+config["topic"].as<string>();
 
 			fs2["cam2table_rot"  ]>>rot_table;
 			fs2["cam2table_trans"]>>tra_table;
@@ -103,36 +102,19 @@ int main(int argc,char **argv) {
 		else throw invalid_argument( "the data YAML need more arguments!" );
 	}
 
-	string *topic_pointeur=NULL;
-	if (topic != ""){
-		topic="/"+topic;
-		topic_pointeur=&topic;
-	}
-	ImageConverter ic  = ImageConverter(topic_pointeur);
     ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
 
 	signal(SIGINT, sig_stop);
-    //wait a image
-    while (current_image.empty()) {
-        ros::spinOnce();
-        ic.getCurrentImage(&current_image);
-        usleep(1000);
-    }
-
-	if (TheIntrinsicFile != "")
-		TheCameraParameters.resize(current_image.size());
-
     //le gestionaire des cubes
-	vector<int> id_cubes={15,16};
-    cube_manager test_cube(TheMarkerSize,cube_size,TheCameraParameters,rot_table,tra_table,
-    						id_cubes);
+    cube_manager test_cube(TheMarkerSize,cube_size,TheCameraParameters,&topic,
+    						rot_table,tra_table,vector<int> {15,16});
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
     int Thresmin,Thresmax;
 	cv::namedWindow(THREADHOLD_VISU, 1);
 	double inter1,inter2;
-	MDetector.getThresholdParams(inter1, inter2);
+	test_cube.MDetector.getThresholdParams(inter1, inter2);
 	Thresmin=inter1;Thresmax=inter2;
 
 
@@ -156,51 +138,39 @@ int main(int argc,char **argv) {
 #endif
    		key = waitKey(1);
         ros::spinOnce();
+#ifdef DEBUG
 #ifdef THREADHOLD_VISU
-        MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
+        test_cube.MDetector.setThresholdParams(max(Thresmin,3), max(Thresmax,3));
+#endif
 #endif
 
-		ic.getCurrentImage(&current_image);
-
-        if (current_image.empty()) {
-            usleep(2000);
-            cout << ">>> Image EMPTY" << endl;
-            continue;
-        }
 #ifdef FPS_TEST
 		mesure_fps[0]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
         // Detection of markers in the image passed
-        test_cube.DetectUpdate(current_image,ic.timestamp);
+        test_cube.DetectUpdate();
 #ifdef FPS_TEST
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
         test_cube.compute_all();
         test_cube.publish_marcker_pose(pose_pub_markers);
-        test_cube.aff_cube(&current_image);
-        test_cube.aff_world(&current_image);
+        test_cube.aff_cube();
+        test_cube.aff_world();
 #ifdef FPS_TEST
 		mesure_fps[2]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
         // Show input with augmented information and the thresholded image
 
-		Rect2d box=test_cube.cubes[1].WatchingBindingBox(current_image.size);
-
-
-		Mat mask(current_image.size(), CV_8UC3, Scalar::all(0));
-		mask(box).setTo(Scalar::all(255));
-		Mat test;
-		current_image.copyTo(test,mask);
-		if(box!=Rect2d(0,0,0,0))
-			imshow("test_flo", test);
 #ifdef DEBUG
-
-        imshow(WIN_NAME, current_image);
+        imshow(WIN_NAME, test_cube.current_image);
+        Mat test;
+        test_cube.current_image.copyTo(test,test_cube.OptimisationMask);
+		imshow("test_flo", test);
 #ifdef THREADHOLD_VISU
-        Mat threadhold_im=MDetector.getThresholdedImage();
+        Mat threadhold_im=test_cube.MDetector.getThresholdedImage();
         imshow(THREADHOLD_VISU,threadhold_im);
 
 #endif

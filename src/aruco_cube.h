@@ -54,6 +54,31 @@ vector<Point3f>Axes3D(float size);
 void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed=false,const Scalar color=Scalar::all(255),
                   int thickness=1, int lineType=8, int shift=0);
 
+// classe qui gère l'arrivée des images
+class ImageConverter{
+  Mat src_img;
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber image_sub_;
+
+  std::recursive_mutex * r_mutex;
+
+  void (*FunctionOnReception)(void)=NULL;
+
+  ros::Time last_frame;
+public:
+  ros::Time timestamp;
+
+  ImageConverter(string *topic);
+  ImageConverter(string *topic, void (*FuncOnRecp)(void));
+
+  ~ImageConverter();
+
+  void getCurrentImage(cv::Mat *input_image);
+  void imageCb(const sensor_msgs::ImageConstPtr& msg);
+
+};
+
 #define MAX_SLIDING_ARUCO 6
 
 //classe des markers qui va nous permettre de faire le calcul de la variance
@@ -159,6 +184,8 @@ public:
 
 class cube_manager{
 public:
+	ImageConverter ImConv;
+	Mat current_image;
 	CameraParameters TheCameraParameters;
 	float TheMarkerSize=-1;
 	MarkerDetector MDetector;
@@ -168,43 +195,22 @@ public:
 	Mat OptimisationMask;
 
 	void push_back(aruco_cube aru_cub);
+
+	void update_current_image();
 	void update_marker(vector<Marker> vect_m,ros::Time time_marker=ros::Time::now());
-	void DetectUpdate(Mat current_image,ros::Time im_time);
+	void DetectUpdate(bool Opti=false);
 	void compute_all();
 	void publish_marcker_pose(ros::Publisher pose_pub_markers);
 
 	void UpdateOptiMask();
 
-	void aff_cube(Mat * current_image,bool unique=false );
-	void aff_world(Mat *current_image);
+	void aff_cube(bool unique=false );
+	void aff_world();
 
 	//Constructeur
-	cube_manager(float MarkSize,CameraParameters CamPara);
-	cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,
+	cube_manager(float MarkSize,CameraParameters CamPara,string *topic);
+	cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,string *topic,
 			Mat rot_table,Mat tra_table,vector<int> cube_ids);
-};
-
-// classe qui gère l'arrivée des images
-class ImageConverter{
-  Mat src_img;
-  ros::NodeHandle nh_;
-  image_transport::ImageTransport it_;
-  image_transport::Subscriber image_sub_;
-
-  std::recursive_mutex * r_mutex;
-
-  ros::Time last_frame;
-public:
-  ros::Time timestamp;
-
-  ImageConverter();
-  ImageConverter(string *topic);
-
-  ~ImageConverter();
-
-  void getCurrentImage(cv::Mat *input_image);
-  void imageCb(const sensor_msgs::ImageConstPtr& msg);
-
 };
 
 #endif

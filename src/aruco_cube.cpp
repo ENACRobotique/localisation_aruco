@@ -452,44 +452,74 @@ void cube_manager::push_back(aruco_cube aru_cub){
 	cubes.push_back(aru_cub);
 }
 
+
+void cube_manager::update_current_image(){
+	ImConv.getCurrentImage(&current_image);
+
+	if (current_image.empty()) {
+		cout << ">>> Image EMPTY" << endl;
+	}
+
+}
+
 void cube_manager::update_marker(vector<Marker> vect_m,ros::Time time_marker){
 	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m,time_marker);
 }
 
-void cube_manager::DetectUpdate(Mat current_image,ros::Time im_time){
+void cube_manager::DetectUpdate(bool Opti){
+	update_current_image();
+	ros::Time im_time = ImConv.timestamp;
 	vector<Marker> TheMarkers;
-    MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
+	Mat traitement_im;
+	if(Opti)
+		current_image.copyTo(traitement_im,OptimisationMask);
+	else
+		current_image.copyTo(traitement_im);
+    MDetector.detect(traitement_im, TheMarkers, TheCameraParameters, TheMarkerSize);
     update_marker(TheMarkers,im_time);
+    UpdateOptiMask();
 }
 
 void cube_manager::compute_all(){
 	for(int i=0; i<cubes.size();i++)cubes[i].compute_all();
 }
 
-void  cube_manager::aff_cube(Mat * current_image,bool unique ){
-	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(current_image,TheCameraParameters,unique );
+void  cube_manager::aff_cube(bool unique ){
+	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(&current_image,TheCameraParameters,unique );
 }
 
-void cube_manager::aff_world(Mat *current_image){
+void cube_manager::aff_world(){
 	if(cubes.size()==0)
 		return;
-	cubes[0].aff_world(current_image,TheCameraParameters);
+	cubes[0].aff_world(&current_image,TheCameraParameters);
 }
 
-
-cube_manager::cube_manager(float MarkSize,CameraParameters CamPara){
+void test(){cout<<"I'm alive!!"<<endl;}
+cube_manager::cube_manager(float MarkSize,CameraParameters CamPara,string *topic)
+					:ImConv(topic){
 	TheMarkerSize=MarkSize;
+	//wait a image
+	Mat current_image;
+	while (current_image.empty()) {
+		ros::spinOnce();
+		ImConv.getCurrentImage(&current_image);
+		usleep(1000);
+	}
+
+	//Config Camera Params & Optimask
+	CamPara.resize(current_image.size());
 	TheCameraParameters=CamPara;
 	Mat mask(TheCameraParameters.CamSize, CV_8UC3, Scalar::all(0));
 	mask.copyTo(OptimisationMask);
+
 	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 }
 
 
 cube_manager::
-cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,
-		Mat rot_table,Mat tra_table,vector<int> cube_ids)
-						:cube_manager(MarkSize,CamPara){
+cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,string *topic,
+		     Mat rot_table,Mat tra_table,vector<int> cube_ids)
+						:cube_manager(MarkSize,CamPara,topic){
 	for(int i=0;i<cube_ids.size();i++){
 		cubes.push_back(aruco_cube(cube_ids[i],cube_size,rot_table,tra_table));
 	}
@@ -515,22 +545,19 @@ void  cube_manager::UpdateOptiMask(){
 	mask.copyTo(OptimisationMask);
 }
 
-ImageConverter::ImageConverter() : it_(nh_)
-{
-  // subscribe to input video feed and publish output video feed
-  image_sub_ = it_.subscribe("/cam1", 1, &ImageConverter::imageCb, this);
-  r_mutex=new std::recursive_mutex ();
-}
-
 ImageConverter::ImageConverter(string *topic) : it_(nh_)
 {
   // subscribe to input video feed and publish output video feed
-	  string default_top="/cam1";
+	string default_top="/cam1";
 	if(topic==NULL){
 		topic=&default_top;
 	}
 	image_sub_ = it_.subscribe(*topic, 1, &ImageConverter::imageCb, this);
 	r_mutex=new std::recursive_mutex ();
+}
+
+ImageConverter::ImageConverter(string *topic, void (*FuncOnRecp)(void)):ImageConverter(topic){
+	FunctionOnReception=FuncOnRecp;
 }
 
 ImageConverter::~ImageConverter()
@@ -540,14 +567,19 @@ ImageConverter::~ImageConverter()
 }
 
 void ImageConverter::getCurrentImage(cv::Mat *input_image) {
-  while((timestamp.toSec() - last_frame.toSec()) <= 0) {
-      usleep(100);
-      ros::spinOnce();
-  }
-  (*r_mutex).lock();
-  *input_image = src_img;
-  last_frame = timestamp;
-  (*r_mutex).unlock();
+	int count=0;
+	while((timestamp.toSec() - last_frame.toSec()) <= 0) {
+		usleep(100);
+		ros::spinOnce();
+		count++;
+		if(count>15000){//15.000*0.1ms=1.5s
+			throw invalid_argument( "No Image on the node" );
+		}
+	}
+	(*r_mutex).lock();
+	*input_image = src_img;
+	last_frame = timestamp;
+	(*r_mutex).unlock();
 }
 
 void ImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -568,6 +600,9 @@ void ImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
   (*r_mutex).lock();
   src_img = cv_ptr->image;
   (*r_mutex).unlock();
+  if(FunctionOnReception==NULL)
+	  return;
+  return (*FunctionOnReception)();
 }
 
 
