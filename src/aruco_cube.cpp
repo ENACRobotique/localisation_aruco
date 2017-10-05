@@ -454,7 +454,11 @@ void cube_manager::push_back(aruco_cube aru_cub){
 
 
 void cube_manager::update_current_image(){
-	ImConv.getCurrentImage(&current_image);
+	Mat inter;
+	ImConv.getCurrentImage(&inter);
+	lock.lock();
+	current_image=inter;
+	lock.unlock();
 
 	if (current_image.empty()) {
 		cout << ">>> Image EMPTY" << endl;
@@ -463,36 +467,51 @@ void cube_manager::update_current_image(){
 }
 
 void cube_manager::update_marker(vector<Marker> vect_m,ros::Time time_marker){
+	lock.lock();
 	for(int i=0; i<cubes.size();i++)cubes[i].update_marker(vect_m,time_marker);
+	lock.unlock();
 }
 
 void cube_manager::DetectUpdate(bool Opti){
-	if(current_image.empty())
-		return;
-	ros::Time im_time = ImConv.timestamp;
 	vector<Marker> TheMarkers;
 	Mat traitement_im;
+
+	lock.lock();//récupération des données et calcul
+	if(current_image.empty()){
+		lock.unlock();
+		return;
+	}
+	ros::Time im_time = ImConv.timestamp;
 	if(Opti)
 		current_image.copyTo(traitement_im,OptimisationMask);
 	else
 		current_image.copyTo(traitement_im);
     MDetector.detect(traitement_im, TheMarkers, TheCameraParameters, TheMarkerSize);
+    lock.unlock();
     update_marker(TheMarkers,im_time);
     UpdateOptiMask();
 }
 
 void cube_manager::compute_all(){
+	lock.lock();
 	for(int i=0; i<cubes.size();i++)cubes[i].compute_all();
+	lock.unlock();
 }
 
 void  cube_manager::aff_cube(bool unique ){
+	lock.lock();
 	for(int i=0; i<cubes.size();i++)cubes[i].aff_cube(&current_image,TheCameraParameters,unique );
+	lock.unlock();
 }
 
 void cube_manager::aff_world(){
-	if(cubes.size()==0)
+	lock.lock();
+	if(cubes.size()==0){
+		lock.unlock();
 		return;
+	}
 	cubes[0].aff_world(&current_image,TheCameraParameters);
+	lock.unlock();
 }
 
 cube_manager::cube_manager(float MarkSize,CameraParameters CamPara,string *topic,bool opti)
@@ -528,25 +547,30 @@ cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,string *top
 
 
 void  cube_manager::publish_marcker_pose(ros::Publisher pose_pub_markers){
+	lock.lock();
 	for(int i=0; i<cubes.size();i++){
 		geometry_msgs::PoseStamped msg=cubes[i].marcker_pose();
 		if(msg.header.frame_id!="-1")
 			pose_pub_markers.publish(msg);
 	}
 	ros::spinOnce();
+	lock.unlock();
 }
 
 void  cube_manager::UpdateOptiMask(){
+
 	Mat mask(OptimisationMask.size(), CV_8UC3, Scalar::all(0));
 
 	for(int i=0; i< cubes.size();i++){
 		Rect2d box=cubes[i].WatchingBindingBox(OptimisationMask.size);
 		mask(box).setTo(Scalar::all(255));
 	}
+	lock.lock();
 	mask.copyTo(OptimisationMask);
+	lock.unlock();
 }
 
-void  cube_manager::RunOpti(int signal_id,ros::Publisher pose_pub_markers){
+void  cube_manager::RunOpti(ros::Publisher pose_pub_markers){
 
     DetectUpdate(true);//on détect mais de manière optimisé!
     compute_all();
@@ -615,7 +639,7 @@ void threadOptimisation(cube_manager* c_manager,ros::Publisher pose_pub_markers)
         ros::spinOnce();
 		c_manager->update_current_image();
 		ros::Time test=ros::Time::now();
-		c_manager->RunOpti(0,pose_pub_markers);
+		c_manager->RunOpti(pose_pub_markers);
 		cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
 		ref=c_manager->ImConv.timestamp;
 	}

@@ -184,9 +184,10 @@ public:
 };
 
 class cube_manager{
+private :
+	Mat current_image;
 public:
 	ImageConverter ImConv;
-	Mat current_image;
 	CameraParameters TheCameraParameters;
 	float TheMarkerSize=-1;
 	MarkerDetector MDetector;
@@ -194,6 +195,15 @@ public:
 
 	//Masque d'optimisation
 	Mat OptimisationMask;
+	std::mutex lock;
+	
+	const Mat getCurrentImage(){
+		Mat inter;
+		lock.lock();
+		current_image.copyTo(inter);
+		lock.unlock();
+		return inter;
+	}
 
 	void push_back(aruco_cube aru_cub);
 
@@ -205,7 +215,7 @@ public:
 
 	void UpdateOptiMask();
 
-	void RunOpti(int signal_id,ros::Publisher pose_pub_markers);
+	void RunOpti(ros::Publisher pose_pub_markers);
 
 	void aff_cube(bool unique=false );
 	void aff_world();

@@ -157,8 +157,8 @@ int main(int argc,char **argv) {
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
-        test_cube.compute_all();
-        test_cube.publish_marcker_pose(pose_pub_markers);
+        //test_cube.compute_all();
+        //test_cube.publish_marcker_pose(pose_pub_markers);
         test_cube.aff_cube();
         test_cube.aff_world();
 #ifdef FPS_TEST
@@ -166,11 +166,11 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Show input with augmented information and the thresholded image
-		if(!test_cube.current_image.empty()){
+		if(!test_cube.getCurrentImage().empty()){
 #ifdef DEBUG
-			imshow(WIN_NAME, test_cube.current_image);
+			imshow(WIN_NAME, test_cube.getCurrentImage());
 			Mat test;
-			test_cube.current_image.copyTo(test,test_cube.OptimisationMask);
+			test_cube.getCurrentImage().copyTo(test,test_cube.OptimisationMask);
 			imshow("test_flo", test);
 #ifdef THREADHOLD_VISU
 			Mat threadhold_im=test_cube.MDetector.getThresholdedImage();
