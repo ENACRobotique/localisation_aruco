@@ -467,7 +467,8 @@ void cube_manager::update_marker(vector<Marker> vect_m,ros::Time time_marker){
 }
 
 void cube_manager::DetectUpdate(bool Opti){
-	update_current_image();
+	if(current_image.empty())
+		return;
 	ros::Time im_time = ImConv.timestamp;
 	vector<Marker> TheMarkers;
 	Mat traitement_im;
@@ -494,10 +495,10 @@ void cube_manager::aff_world(){
 	cubes[0].aff_world(&current_image,TheCameraParameters);
 }
 
-void test(){cout<<"I'm alive!!"<<endl;}
-cube_manager::cube_manager(float MarkSize,CameraParameters CamPara,string *topic)
+cube_manager::cube_manager(float MarkSize,CameraParameters CamPara,string *topic,bool opti)
 					:ImConv(topic){
 	TheMarkerSize=MarkSize;
+
 	//wait a image
 	Mat current_image;
 	while (current_image.empty()) {
@@ -518,8 +519,8 @@ cube_manager::cube_manager(float MarkSize,CameraParameters CamPara,string *topic
 
 cube_manager::
 cube_manager(float MarkSize,float cube_size,CameraParameters CamPara,string *topic,
-		     Mat rot_table,Mat tra_table,vector<int> cube_ids)
-						:cube_manager(MarkSize,CamPara,topic){
+		     Mat rot_table,Mat tra_table,vector<int> cube_ids,bool opti)
+						:cube_manager(MarkSize,CamPara,topic,opti){
 	for(int i=0;i<cube_ids.size();i++){
 		cubes.push_back(aruco_cube(cube_ids[i],cube_size,rot_table,tra_table));
 	}
@@ -545,6 +546,13 @@ void  cube_manager::UpdateOptiMask(){
 	mask.copyTo(OptimisationMask);
 }
 
+void  cube_manager::RunOpti(int signal_id,ros::Publisher pose_pub_markers){
+
+    DetectUpdate(true);//on détect mais de manière optimisé!
+    compute_all();
+    publish_marcker_pose(pose_pub_markers);
+}
+
 ImageConverter::ImageConverter(string *topic) : it_(nh_)
 {
   // subscribe to input video feed and publish output video feed
@@ -554,10 +562,7 @@ ImageConverter::ImageConverter(string *topic) : it_(nh_)
 	}
 	image_sub_ = it_.subscribe(*topic, 1, &ImageConverter::imageCb, this);
 	r_mutex=new std::recursive_mutex ();
-}
 
-ImageConverter::ImageConverter(string *topic, void (*FuncOnRecp)(void)):ImageConverter(topic){
-	FunctionOnReception=FuncOnRecp;
 }
 
 ImageConverter::~ImageConverter()
@@ -600,9 +605,19 @@ void ImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
   (*r_mutex).lock();
   src_img = cv_ptr->image;
   (*r_mutex).unlock();
-  if(FunctionOnReception==NULL)
-	  return;
-  return (*FunctionOnReception)();
+
+  return ;
 }
 
+void threadOptimisation(cube_manager* c_manager,ros::Publisher pose_pub_markers){
+	ros::Time ref= ros::TIME_MIN;
+	while(true){
+        ros::spinOnce();
+		c_manager->update_current_image();
+		ros::Time test=ros::Time::now();
+		c_manager->RunOpti(0,pose_pub_markers);
+		cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
+		ref=c_manager->ImConv.timestamp;
+	}
+}
 

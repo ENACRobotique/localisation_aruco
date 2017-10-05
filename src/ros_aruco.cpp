@@ -61,15 +61,18 @@ int main(int argc,char **argv) {
 	//rend le process plus rapide, ou plutot moins interrompu
 	setpriority(PRIO_PROCESS, getpid(), 10);
 
-	cv::Mat current_image;
 
 	//params Marker et aruco_cube
 	CameraParameters TheCameraParameters;
 
     // ROS messaging init
 	ros::init(argc, argv, "aruco_cube_publisher");
-	ros::NodeHandle n;
+
     ros::spinOnce();
+
+	//Noeud ros de publication
+	ros::NodeHandle n;
+	ros::Publisher  pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
     //var de gestion des entrées
 	string topic;
 	string TheIntrinsicFile;
@@ -102,12 +105,11 @@ int main(int argc,char **argv) {
 		else throw invalid_argument( "the data YAML need more arguments!" );
 	}
 
-    ros::Publisher pose_pub_markers = n.advertise<geometry_msgs::PoseStamped>("/aruco/markerarray", 1);
-
 	signal(SIGINT, sig_stop);
     //le gestionaire des cubes
     cube_manager test_cube(TheMarkerSize,cube_size,TheCameraParameters,&topic,
-    						rot_table,tra_table,vector<int> {15,16});
+    						rot_table,tra_table,vector<int> {15,16},true);
+    std::thread threadObj(threadOptimisation, &test_cube, pose_pub_markers);
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
@@ -149,6 +151,7 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Detection of markers in the image passed
+		//test_cube.update_current_image();
         test_cube.DetectUpdate();
 #ifdef FPS_TEST
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
@@ -163,19 +166,19 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Show input with augmented information and the thresholded image
-
+		if(!test_cube.current_image.empty()){
 #ifdef DEBUG
-        imshow(WIN_NAME, test_cube.current_image);
-        Mat test;
-        test_cube.current_image.copyTo(test,test_cube.OptimisationMask);
-		imshow("test_flo", test);
+			imshow(WIN_NAME, test_cube.current_image);
+			Mat test;
+			test_cube.current_image.copyTo(test,test_cube.OptimisationMask);
+			imshow("test_flo", test);
 #ifdef THREADHOLD_VISU
-        Mat threadhold_im=test_cube.MDetector.getThresholdedImage();
-        imshow(THREADHOLD_VISU,threadhold_im);
+			Mat threadhold_im=test_cube.MDetector.getThresholdedImage();
+			imshow(THREADHOLD_VISU,threadhold_im);
 
 #endif
 #endif
-
+		}
 #ifdef PLOT_POS
 #ifndef FPS_TEST
 		cout<<"POS:"<< test_cube.cubes[1].cube_transWorld.t()<<endl;
@@ -183,11 +186,13 @@ int main(int argc,char **argv) {
 #endif
 
 #ifdef FPS_TEST
+		/*
 		cout<<"\r";//pour ne pas pourrir le terminal
 		cout<<"Temps:";
 		for(int i=0;i<3;i++)
 			cout<<mesure_fps[i]*1000<<"\t";
-		cout<<"ms";
+		cout<<"ms";*/
+		 cout<<"OUT:"<<mesure_fps[1]*1000<<" ms"<<endl;
 #endif
 	}
 }
