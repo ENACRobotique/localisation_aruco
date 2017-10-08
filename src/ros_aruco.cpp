@@ -104,6 +104,7 @@ int main(int argc,char **argv) {
 		}
 		else throw invalid_argument( "the data YAML need more arguments!" );
 	}
+	else throw invalid_argument( "any YAML given!" );
 
 	signal(SIGINT, sig_stop);
     //le gestionaire des cubes

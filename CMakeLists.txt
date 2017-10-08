@@ -47,15 +47,15 @@ target_link_libraries(cube_pos
 ## fin executable cube pos
 
 ## Calibration de la table à l'instalation des balises
-add_executable(calibration_aruco
-	src/calibration_aruco.cpp 
+add_executable(calibration_world
+	src/calibration_world.cpp 
 	src/aruco_cube.cpp 
 	src/aruco_cube.h
 )
 
-add_dependencies(calibration_aruco ${catkin_EXPORTED_TARGETS})
+add_dependencies(calibration_world ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(calibration_aruco 
+target_link_libraries(calibration_world 
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
