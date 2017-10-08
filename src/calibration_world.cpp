@@ -27,11 +27,14 @@ int main(int argc,char **argv) {
     string topic;
 	float TheMarkerSize=-1;
 	int CalibMarkerID=-1;
+	Mat rotM2W, transM2W;
 
 	if(argc!=2)throw invalid_argument( "any YAML given!" );
 	ConfigFile=argv[1];
 	YAML::Node config = YAML::LoadFile(ConfigFile);
-	if(!config["marker_size"]||!config["topic"]||!config["marker_id"])
+	FileStorage fs2(ConfigFile, FileStorage::READ);
+	if(!config["marker_size"]||!config["topic"]||!config["marker_id"]||
+	   fs2["rotMarker2World"  ].empty()||fs2["transMarker2World"].empty())
 		throw invalid_argument( "the data YAML need more arguments!" );
 
 	//read params
@@ -39,6 +42,12 @@ int main(int argc,char **argv) {
 	topic="/"+config["topic"].as<string>();
 	CalibMarkerID=config["marker_id"].as<int>();
 	TheCameraParameters.readFromXMLFile(ConfigFile);
+	fs2["rotMarker2World"  ]>>rotM2W;
+	fs2["transMarker2World"]>>transM2W;
+	rotM2W.convertTo(rotM2W,CV_32F);
+	transM2W.convertTo(transM2W,CV_32F);
+	Mat transCenter2RightDown=(Mat_<float>(3, 1 ) <<-TheMarkerSize/2,-TheMarkerSize/2,0);
+
 
 	ImageConverter image_getter(&topic);
 	Mat current_image;
@@ -54,6 +63,7 @@ int main(int argc,char **argv) {
 	//end config
 	signal(SIGINT, sig_stop);
 	char key;
+	Mat rot_cam2World,trans_cam2World;
 #ifdef DEBUG
 	cv::namedWindow("Calib_view", 1);
 #endif
@@ -65,22 +75,26 @@ int main(int argc,char **argv) {
 		if(TheMarkers.size()==1&& TheMarkers[0].id==CalibMarkerID){
 
 			TheMarkers[0].draw(current_image,Scalar(0,255,0),3,true);
-			CvDrawingUtils::draw3dAxis(current_image, TheMarkers[0], TheCameraParameters);
+
+			//calibration
+
+			Rodrigues(TheMarkers[0].Rvec,rot_cam2World);
+			trans_cam2World=TheMarkers[0].Tvec+rot_cam2World*(transM2W+transCenter2RightDown);
+
+			rot_cam2World*=rotM2W;
+			EasyPolyLine(&current_image,
+					Points3DtoCamPoints(Axes3D(0.25),rot_cam2World,trans_cam2World,TheCameraParameters) );
+			EasyPolyLine(&current_image,
+								Points3DtoCamPoints(Cadre3D(0.25),rot_cam2World,trans_cam2World,TheCameraParameters),
+								true,Scalar(0,0,255));
 
 		}
-
-
 #ifdef DEBUG
 		imshow("Calib_view",current_image);
 #endif
-
-
-
 		key=waitKey(1);
-
 	}
-
-
-
-
+	cout<<"Fin de la calibration"<<endl;
+	cout<<"rotationC2W:"<<endl<<rot_cam2World<<endl<<endl;
+	cout<<"translationC2W:"<<endl<<trans_cam2World<<endl<<endl;
 }
