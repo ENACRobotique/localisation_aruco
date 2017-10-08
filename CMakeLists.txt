@@ -29,6 +29,7 @@ include_directories(
 	src/
 )
 
+## Cube pos est l'exécutable qui prend des images en entrée et renvoient la pos des robot
 add_executable(cube_pos
 	src/ros_aruco.cpp 
 	src/aruco_cube.cpp 
@@ -43,8 +44,27 @@ target_link_libraries(cube_pos
 	${aruco_LIBS}
 	yaml-cpp
 )
+## fin executable cube pos
+
+## Calibration de la table à l'instalation des balises
+add_executable(calibration_aruco
+	src/calibration_aruco.cpp 
+	src/aruco_cube.cpp 
+	src/aruco_cube.h
+)
+
+add_dependencies(calibration_aruco ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(calibration_aruco 
+	${catkin_LIBRARIES}
+	${OpenCV_LIBS}
+	${aruco_LIBS}
+	yaml-cpp
+)
 
 add_definitions(-DDEBUG)
+
+#fin calib
 
 #############
 ## Install ##
