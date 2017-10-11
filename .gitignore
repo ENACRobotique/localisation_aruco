@@ -7,4 +7,4 @@ build/
 
 catkin_generated/
 
-data/
+yaml_data/
