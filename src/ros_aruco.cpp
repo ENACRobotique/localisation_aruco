@@ -36,9 +36,10 @@ or implied, of Rafael Muñoz Salinas.
 #include <yaml-cpp/yaml.h>
 
 #define WIN_NAME "ROS ARUCO"
-#define FPS_TEST
-//#define THREADHOLD_VISU "THRESHOLD IMAGE"
+//#define FPS_TEST
+#define THREADHOLD_VISU "THRESHOLD IMAGE"
 //#define PLOT_POS
+//#define OPTI
 
 bool readArguments (string *File, int argc,char **argv )
 {
@@ -110,7 +111,9 @@ int main(int argc,char **argv) {
     //le gestionaire des cubes
     cube_manager test_cube(TheMarkerSize,cube_size,TheCameraParameters,&topic,
     						rot_table,tra_table,vector<int> {15,16},true);
+#ifdef OPTI
     std::thread threadObj(threadOptimisation, &test_cube, pose_pub_markers);
+#endif
 #ifdef DEBUG
 	// Create gui
 #ifdef THREADHOLD_VISU
@@ -121,8 +124,8 @@ int main(int argc,char **argv) {
 	Thresmin=inter1;Thresmax=inter2;
 
 
-	cv::createTrackbar("Thresmin", WIN_NAME, &Thresmin, 100);
-	cv::createTrackbar("Thresmax", WIN_NAME, &Thresmax, 100);
+	cv::createTrackbar("Thresmin", THREADHOLD_VISU, &Thresmin, 100);
+	cv::createTrackbar("Thresmax", THREADHOLD_VISU, &Thresmax, 100);
 #endif
 	cv::namedWindow(WIN_NAME, 1);
 
@@ -152,14 +155,18 @@ int main(int argc,char **argv) {
 		mesure_temps=ros::Time::now();
 #endif
         // Detection of markers in the image passed
-		//test_cube.update_current_image();
+#ifndef OPTI
+		test_cube.update_current_image();
+#endif
         test_cube.DetectUpdate();
 #ifdef FPS_TEST
 		mesure_fps[1]=ros::Time::now()-mesure_temps;
 		mesure_temps=ros::Time::now();
 #endif
-        //test_cube.compute_all();
-        //test_cube.publish_marcker_pose(pose_pub_markers);
+#ifndef OPTI
+		test_cube.compute_all();
+        test_cube.publish_marcker_pose(pose_pub_markers);
+#endif
         test_cube.aff_cube();
         test_cube.aff_world();
 #ifdef FPS_TEST

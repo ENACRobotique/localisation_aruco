@@ -444,7 +444,7 @@ void aruco_cube::aff_world(Mat * current_image,CameraParameters CameraMatrix){
 	table.push_back(Point3f(3,2,0));
 	table.push_back(Point3f(0,2,0));
 	EasyPolyLine(current_image,Points3DtoCamPoints(table,rot_W2C,tra_W2C,CameraMatrix),
-					 false,Scalar(255,255,255),1);
+					 false,Scalar(255,0,255),1);
 
 }
 

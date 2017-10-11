@@ -8,3 +8,5 @@ build/
 catkin_generated/
 
 yaml_data/
+
+\.settings/

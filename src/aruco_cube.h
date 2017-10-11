@@ -36,7 +36,7 @@ using namespace aruco;
 using namespace cv;
 
 //#define PRINT_POSE
-#define FPS_TEST
+//#define FPS_TEST
 
 template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
