@@ -50,8 +50,7 @@ robot2 = FakeRobot()
 robot2.translate(0,0,0)
 
 videocamera = VideoCamera()
-videocamera.cam_width=640
-videocamera.cam_height=480
+videocamera.properties(cam_width=640,cam_height=480)
 robot2.append(videocamera)
 # place your component at the correct location
 videocamera.translate(0, 0,1)
