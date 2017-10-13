@@ -54,7 +54,10 @@ videocamera.properties(cam_width=640,cam_height=480)
 robot2.append(videocamera)
 # place your component at the correct location
 videocamera.translate(0, 0,1)
-videocamera.rotate(1,-.5,0)
+videocamera.rotate(0.85,-.5,0)
+
+pose2 = Pose()
+videocamera.append(pose2)
 
 
 
@@ -62,9 +65,10 @@ videocamera.rotate(1,-.5,0)
 #
 # Check here: http://www.openrobots.org/morse/doc/stable/user/integration.html 
 # the other available interfaces (like ROS, YARP...)
-robot.add_default_interface('socket')
+#robot.add_default_interface('socket')
 #videocamera.add_interface('socket')
 robot.add_default_interface('ros')
+robot2.add_default_interface('ros')
 videocamera.add_interface('ros')
 
 
