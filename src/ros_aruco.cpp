@@ -37,7 +37,7 @@ or implied, of Rafael Muñoz Salinas.
 
 #define WIN_NAME "ROS ARUCO"
 //#define FPS_TEST
-#define THREADHOLD_VISU "THRESHOLD IMAGE"
+//#define THREADHOLD_VISU "THRESHOLD IMAGE"
 //#define PLOT_POS
 //#define OPTI
 

@@ -97,8 +97,8 @@ void stable_marker::add_marker(Marker new_m,ros::Time time_marker){
 	Mat rot;
 	Rodrigues(new_m.Rvec,rot);
 	Mat Mtest=rot*(Mat_<float>(3, 1 ) <<0,0,1);
-	if(Mtest.at<float>(2,0)>-0.1){//check if marker is wrong
-		return;
+	if(Mtest.at<float>(2,0)>-0.2){//check if marker is wrong
+		return;//TODO correct it and use it
 	}
 	//Ajout du marker
 	sliding_markers.push_front(new_m);
