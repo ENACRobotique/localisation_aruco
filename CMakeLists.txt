@@ -29,6 +29,19 @@ include_directories(
 	src/
 )
 
+## Generating our messages
+add_message_files(
+		FILES
+		Robot.msg
+        Robots.msg
+)
+
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+        geometry_msgs
+)
+
 ## Cube pos est l'exécutable qui prend des images en entrée et renvoient la pos des robot
 add_executable(cube_pos
 	src/ros_aruco.cpp 
