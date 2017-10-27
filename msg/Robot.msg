@@ -1,3 +1,3 @@
 uint8 robot_id
-geometry_msgs/PoseWithCovariance pose
-geometry_msgs/TwistWithCovariance twist
+geometry_msgs/PoseWithCovarianceStamped pose
+geometry_msgs/TwistWithCovarianceStamped twist
