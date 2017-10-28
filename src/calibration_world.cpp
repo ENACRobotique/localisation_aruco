@@ -33,12 +33,12 @@ int main(int argc,char **argv) {
 	ConfigFile=argv[1];
 	YAML::Node config = YAML::LoadFile(ConfigFile);
 	FileStorage fs2(ConfigFile, FileStorage::READ);
-	if(!config["marker_size"]||!config["topic"]||!config["marker_id"]||
+	if(!config["marker_size_calib"]||!config["topic"]||!config["marker_id"]||
 	   fs2["rotMarker2World"  ].empty()||fs2["transMarker2World"].empty())
 		throw invalid_argument( "the data YAML need more arguments!" );
 
 	//read params
-	TheMarkerSize=config["marker_size"].as<float>();
+	TheMarkerSize=config["marker_size_calib"].as<float>();
 	topic="/"+config["topic"].as<string>();
 	CalibMarkerID=config["marker_id"].as<int>();
 	TheCameraParameters.readFromXMLFile(ConfigFile);
