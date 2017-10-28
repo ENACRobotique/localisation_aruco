@@ -62,7 +62,7 @@ int main(int argc,char **argv) {
 	vector<Marker>TheMarkers;
 	//end config
 	signal(SIGINT, sig_stop);
-	char key;
+	char key;int id_mark;
 	Mat rot_cam2World,trans_cam2World;
 #ifdef DEBUG
 	cv::namedWindow("Calib_view", 1);
@@ -72,14 +72,19 @@ int main(int argc,char **argv) {
 
 		image_getter.getCurrentImage(&current_image);
 		MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
-		if(TheMarkers.size()==1&& TheMarkers[0].id==CalibMarkerID){
+		id_mark=-1;
+		for(int i=0;i<TheMarkers.size();i++){
+			if(TheMarkers[i].id==CalibMarkerID)
+				id_mark=i;
+		}
+		if(id_mark>=0){
 
-			TheMarkers[0].draw(current_image,Scalar(0,255,0),3,true);
+			TheMarkers[id_mark].draw(current_image,Scalar(0,255,0),3,true);
 
 			//calibration
 
-			Rodrigues(TheMarkers[0].Rvec,rot_cam2World);
-			trans_cam2World=TheMarkers[0].Tvec+rot_cam2World*(transM2W+transCenter2RightDown);
+			Rodrigues(TheMarkers[id_mark].Rvec,rot_cam2World);
+			trans_cam2World=TheMarkers[id_mark].Tvec+rot_cam2World*(transM2W+transCenter2RightDown);
 
 			rot_cam2World*=rotM2W;
 			EasyPolyLine(&current_image,
@@ -94,6 +99,8 @@ int main(int argc,char **argv) {
 #endif
 		key=waitKey(1);
 	}
+
+
 	cout<<"Fin de la calibration"<<endl;
 	cout<<"rotationC2W:"<<endl<<rot_cam2World<<endl<<endl;
 	cout<<"translationC2W:"<<endl<<trans_cam2World<<endl<<endl;
