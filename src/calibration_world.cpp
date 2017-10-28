@@ -104,4 +104,13 @@ int main(int argc,char **argv) {
 	cout<<"Fin de la calibration"<<endl;
 	cout<<"rotationC2W:"<<endl<<rot_cam2World<<endl<<endl;
 	cout<<"translationC2W:"<<endl<<trans_cam2World<<endl<<endl;
+
+	//Save
+	FileStorage fs(ConfigFile, FileStorage::APPEND);
+	cvWriteComment(*fs, "info created by the calibration algo", 0);
+	//fs <<"#info created by the calibration algo";
+	fs << "cam2table_rot"   <<   rot_cam2World;  
+	fs << "cam2table_trans" << trans_cam2World;  
+
+	fs.release();    
 }
