@@ -29,7 +29,7 @@ or implied, of Rafael Muñoz Salinas.
 ********************************************************************************************/
 
 
-#include <aruco_cube.h>
+#include "../includes/aruco_cube.h"
 
 #include <sys/resource.h>
 

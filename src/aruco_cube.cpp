@@ -1,4 +1,4 @@
-#include <aruco_cube.h>
+#include "../includes/aruco_cube.h"
 
 Mat Rotation33(double alpha,double beta,double gamma){
     // Rotation matrices around the X, Y, and Z axis

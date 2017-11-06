@@ -5,7 +5,7 @@
  *      Author: liehnfl
  */
 
-#include "aruco_cube.h"
+#include "../includes/aruco_cube.h"
 
 #include <yaml-cpp/yaml.h>
 
