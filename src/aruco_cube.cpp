@@ -331,10 +331,12 @@ Point2f aruco_cube::CentreInIm(){
 Rect2d  aruco_cube::WatchingBindingBox(MatSize im_size){
 	float cote=max_peri()/2;
 	Point2f centre=CentreInIm();
-	Rect2d res = Rect2d(max((int)(centre.x-cote),0),
-			  	  	    max((int)(centre.y-cote),0),
-			            min((int)(cote*2),im_size[1]-(int)(centre.x-cote)),
-			            min((int)(cote*2),im_size[0]-(int)(centre.y-cote)));
+	int x=max((int)(centre.x-cote),0);
+	int y=max((int)(centre.y-cote),0);
+	Rect2d res = Rect2d(x,
+			  	  	    y,
+			            min((int)(cote*2),im_size[1]-x),
+			            min((int)(cote*2),im_size[0]-y));
 	return res;
 }
 
