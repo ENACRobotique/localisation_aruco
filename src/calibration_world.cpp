@@ -14,9 +14,17 @@ void sig_stop(int a)
 {
 	allowed=false;
 }
+#ifdef RASPI
+#define CALIB_INTERUPT 1
+#endif
 
 int main(int argc,char **argv) {
 
+#ifdef RASPI
+	wiringPiSetup () ;
+	pinMode(CALIB_INTERUPT,INPUT);
+	pullUpDnControl (CALIB_INTERUPT,PUD_UP) ;
+#endif
     // ROS messaging init
 	ros::init(argc, argv, "aruco_cube_publisher");
 
@@ -68,8 +76,12 @@ int main(int argc,char **argv) {
 	cv::namedWindow("Calib_view", 1);
 #endif
 
-	while(allowed && (key != 'x') && (key != 27)&& ros::ok() ){
 
+	while(allowed && (key != 'x') && (key != 27)&& ros::ok()
+#ifdef RASPI
+	&& digitalRead(CALIB_INTERUPT)
+#endif
+	     ){
 		image_getter.getCurrentImage(&current_image);
 		MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
 		id_mark=-1;

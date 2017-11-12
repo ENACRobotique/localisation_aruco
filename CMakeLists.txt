@@ -16,6 +16,14 @@ FIND_PACKAGE(OpenCV REQUIRED)
 
 FIND_PACKAGE(aruco REQUIRED)
 
+if( EXISTS /opt/vc/include/bcm_host.h)
+	add_definitions(-DRASPI)
+	find_package(WiringPi REQUIRED)
+	include_directories(${WIRINGPI_INCLUDE_DIRS}) 
+else()
+	SET(WIRINGPI_LIBRARIES "")
+endif()
+
 INCLUDE(FindPkgConfig)
 
 SET(ROS_BUILD_TYPE Release)
@@ -42,6 +50,7 @@ target_link_libraries(cube_pos
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
+	${WIRINGPI_LIBRARIES}
 	yaml-cpp
 )
 ## fin executable cube pos
@@ -59,6 +68,7 @@ target_link_libraries(calibration_world
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
+	${WIRINGPI_LIBRARIES}
 	yaml-cpp
 )
 

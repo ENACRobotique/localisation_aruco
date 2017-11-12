@@ -11,6 +11,10 @@
 #include <thread>
 #include <mutex>
 
+#ifdef RASPI
+//Raspi gpio lib
+#include <wiringPi.h>
+#endif
 
 // ARUCO
 #include "aruco.h"
