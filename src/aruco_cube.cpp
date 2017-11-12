@@ -642,7 +642,7 @@ void threadOptimisation(cube_manager* c_manager,ros::Publisher pose_pub_markers)
 		c_manager->update_current_image();
 		ros::Time test=ros::Time::now();
 		c_manager->RunOpti(pose_pub_markers);
-		cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
+		//cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
 		ref=c_manager->ImConv.timestamp;
 	}
 }

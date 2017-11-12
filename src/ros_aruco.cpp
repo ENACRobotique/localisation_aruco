@@ -59,11 +59,14 @@ void sig_stop(int a)
 	allowed=false;
 }
 #ifdef RASPI
+#define PROCESS_LED 2
 #define PROCESS_INTERUPT 4
 #endif
 int main(int argc,char **argv) {
 #ifdef RASPI
 	wiringPiSetup () ;
+	pinMode(PROCESS_LED,OUTPUT);
+	bool led_status=true;
 	pinMode(PROCESS_INTERUPT,INPUT);
 	pullUpDnControl (PROCESS_INTERUPT,PUD_UP) ;
 #endif
@@ -151,6 +154,11 @@ int main(int argc,char **argv) {
 	&& digitalRead(PROCESS_INTERUPT)
 #endif
 			) {
+#ifdef RASPI
+		led_status^=1;
+		digitalWrite(PROCESS_LED,led_status);
+#endif
+
 #ifdef FPS_TEST
 		mesure_temps=ros::Time::now();
 #endif

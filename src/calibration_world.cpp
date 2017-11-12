@@ -15,6 +15,7 @@ void sig_stop(int a)
 	allowed=false;
 }
 #ifdef RASPI
+#define CALIB_LED 0
 #define CALIB_INTERUPT 1
 #endif
 
@@ -22,6 +23,8 @@ int main(int argc,char **argv) {
 
 #ifdef RASPI
 	wiringPiSetup () ;
+	bool led_status=true;
+	pinMode(CALIB_LED,OUTPUT);
 	pinMode(CALIB_INTERUPT,INPUT);
 	pullUpDnControl (CALIB_INTERUPT,PUD_UP) ;
 #endif
@@ -82,6 +85,10 @@ int main(int argc,char **argv) {
 	&& digitalRead(CALIB_INTERUPT)
 #endif
 	     ){
+#ifdef RASPI
+		led_status^=1;
+		digitalWrite(CALIB_LED,led_status);
+#endif
 		image_getter.getCurrentImage(&current_image);
 		MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
 		id_mark=-1;
@@ -112,10 +119,14 @@ int main(int argc,char **argv) {
 		key=waitKey(1);
 	}
 
-
+	bool success=( (int)rot_cam2World.size().height )>0;
+#ifdef RASPI
+	digitalWrite(CALIB_LED,success);
+#endif
 	cout<<"Fin de la calibration"<<endl;
 	cout<<"rotationC2W:"<<endl<<rot_cam2World<<endl<<endl;
 	cout<<"translationC2W:"<<endl<<trans_cam2World<<endl<<endl;
+	cout<<"->Réusite:"<<success<<endl;
 
 	//Save
 	FileStorage fs(ConfigFile, FileStorage::APPEND);
