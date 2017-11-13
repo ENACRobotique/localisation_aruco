@@ -20,7 +20,7 @@ FIND_PACKAGE(aruco REQUIRED)
 INCLUDE(FindPkgConfig)
 
 SET(ROS_BUILD_TYPE Release)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2 -fpermissive")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -78,19 +78,17 @@ target_link_libraries(calibration_world
 )
 
 ## Cube Pose To UART to send data through the air way up to the robots !
-#### NOTE : If it does not compile or run, try recompiling ArduPi Library by executing the following commands;
-#### in localisation_aruco/arduPi : `g++ -fpermissive -c arduPi.cpp -o arduPi.o`
-
 
 
 catkin_package(CATKIN_DEPENDS message_runtime)
 add_executable(cube_pose_to_uart
         src/cube_pose_to_uart.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/arduPi/arduPi.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/arduPi/arduPi.h
         )
-
 add_dependencies(cube_pose_to_uart ${catkin_EXPORTED_TARGETS})
 include_directories(arduPi)
-target_link_libraries(cube_pose_to_uart rt pthread ${CMAKE_CURRENT_SOURCE_DIR}/arduPi/arduPi.o
+target_link_libraries(cube_pose_to_uart rt pthread
 	        ${catkin_LIBRARIES}
         )
 
