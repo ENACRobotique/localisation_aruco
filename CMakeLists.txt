@@ -83,11 +83,8 @@ target_link_libraries(calibration_world
 catkin_package(CATKIN_DEPENDS message_runtime)
 add_executable(cube_pose_to_uart
         src/cube_pose_to_uart.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/arduPi/arduPi.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/arduPi/arduPi.h
         )
 add_dependencies(cube_pose_to_uart ${catkin_EXPORTED_TARGETS})
-include_directories(arduPi)
 target_link_libraries(cube_pose_to_uart rt pthread
 	        ${catkin_LIBRARIES}
         )
