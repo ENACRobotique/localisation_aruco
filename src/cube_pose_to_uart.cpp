@@ -12,7 +12,7 @@
 #define USE_CUSTOM_MSG 0
 #define NODE_NAME "cube_pose_to_uart"
 #define SUB_ROBOTS_TOPIC "/robots"
-#define RADTOUINT16FACTOR 20860.756700940907
+#define RADTOUINT16FACTOR 10430.219195527361
 #define MSG_SIZE 13
 
 int uart0_filestream = -1;
