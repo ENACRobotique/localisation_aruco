@@ -4,11 +4,12 @@
 #include <tf/transform_datatypes.h>
 #include "ros/ros.h"
 #include "Robots.h"
+#include "geometry_msgs/PoseStamped.h"
 #include <stdio.h>
 #include <unistd.h>			//Used for UART
 #include <fcntl.h>			//Used for UART
 #include <termios.h>		//Used for UART
-
+#define USE_CUSTOM_MSG 0
 #define NODE_NAME "cube_pose_to_uart"
 #define SUB_ROBOTS_TOPIC "/robots"
 #define RADTOUINT16FACTOR 20860.756700940907
@@ -65,7 +66,7 @@ void enable_uart(){
     if (uart0_filestream == -1)
     {
         //ERROR - CAN'T OPEN SERIAL PORT
-        printf("Error - Unable to open UART.  Ensure it is not in use by another application\n");
+        ROS_ERROR("Error - Unable to open UART.  Ensure it is not in use by another application\n");
     }
 
     //CONFIGURE THE UART
@@ -94,7 +95,7 @@ void uart_write(char * data, int length){
         ssize_t count = write(uart0_filestream, &data[0], static_cast<size_t>(length));		//Filestream, bytes to write, number of bytes to write
         if (count < 0)
         {
-            printf("UART TX error\n");
+            ROS_ERROR("UART TX error\n");
         }
     }
 }
@@ -121,12 +122,33 @@ void newRobotPoseMessageCB(const cube_pos::Robots::ConstPtr& msg){
     }
 }
 
+void newRobotPoseMessageCBGeoMsg(const geometry_msgs::PoseStamped::ConstPtr& msg){
+    uRawMsg rawMsg;
+    sRobotMsg serialMsg{};
+    tf::Pose poseForQuaternionConversion;
+    tf::poseMsgToTF(msg->pose, poseForQuaternionConversion);
+    double yaw_angle = tf::getYaw(poseForQuaternionConversion.getRotation());
+
+    //serialMsg.robotId = static_cast<eRobotType>(std::stoi(msg->header.frame_id));
+    serialMsg.robotPose.x = static_cast<uint16_t>(msg->pose.position.x);
+    serialMsg.robotPose.y = static_cast<uint16_t>(msg->pose.position.y); //TODO : Multiply to use fully the 2 bytes
+    serialMsg.robotPose.theta = static_cast<uint16_t>(yaw_angle * RADTOUINT16FACTOR);
+
+    rawMsg.msg = serialMsg;
+    uart_write(rawMsg.data, MSG_SIZE);
+}
+
 
 int main(int argc, char** argv) {
     enable_uart();
     ros::init(argc, argv, NODE_NAME);
     ros::NodeHandle n;
+#if USE_CUSTOM_MSG
     ros::Subscriber s = n.subscribe<cube_pos::Robots>(SUB_ROBOTS_TOPIC, 1000, newRobotPoseMessageCB);
+#else
+    ros::Subscriber s = n.subscribe<geometry_msgs::PoseStamped>(SUB_ROBOTS_TOPIC, 1000, newRobotPoseMessageCBGeoMsg);
+#endif
+    ROS_INFO_NAMED(NODE_NAME, "initialized.");
     ros::spin();
     return 0;
 }
