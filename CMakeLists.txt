@@ -85,7 +85,7 @@ add_executable(cube_pose_to_uart
         src/cube_pose_to_uart.cpp
         )
 add_dependencies(cube_pose_to_uart ${catkin_EXPORTED_TARGETS})
-target_link_libraries(cube_pose_to_uart rt pthread
+target_link_libraries(cube_pose_to_uart rt pthread xbee
 	        ${catkin_LIBRARIES}
         )
 
