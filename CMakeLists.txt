@@ -9,12 +9,18 @@ FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp tf std_msgs sensor_msgs geometry_
 SET(ARUCO_PATH /opt/ros/kinetic)
 SET(CMAKE_MODULE_PATH ${ARUCO_PATH}/lib/cmake)
 SET(ARUCO_INCLUDE_DIRS ${ARUCO_PATH}/include/aruco)
-
 ## System dependencies are found with CMake's conventions
 
 FIND_PACKAGE(OpenCV REQUIRED)
 
 FIND_PACKAGE(aruco REQUIRED)
+
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES beginner_tutorials
+#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  DEPENDS system_lib
+)
 
 if( EXISTS /opt/vc/include/bcm_host.h)
 	add_definitions(-DRASPI)
@@ -38,15 +44,16 @@ include_directories(
 )
 
 ## Cube pos est l'exécutable qui prend des images en entrée et renvoient la pos des robot
-add_executable(cube_pos
+add_executable(${PROJECT_NAME}_cube_pos
 	src/ros_aruco.cpp 
 	src/aruco_cube.cpp 
 	src/aruco_cube.h
 )
+set_target_properties(${PROJECT_NAME}_cube_pos PROPERTIES OUTPUT_NAME cube_pos PREFIX "")
 
-add_dependencies(cube_pos ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_cube_pos ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(cube_pos 
+target_link_libraries(${PROJECT_NAME}_cube_pos 
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
@@ -56,15 +63,16 @@ target_link_libraries(cube_pos
 ## fin executable cube pos
 
 ## Calibration de la table à l'instalation des balises
-add_executable(calibration_world
+add_executable(${PROJECT_NAME}_calibration_world
 	src/calibration_world.cpp 
 	src/aruco_cube.cpp 
 	src/aruco_cube.h
 )
+set_target_properties(${PROJECT_NAME}_calibration_world PROPERTIES OUTPUT_NAME calibration_world PREFIX "")
 
-add_dependencies(calibration_world ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_calibration_world ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(calibration_world 
+target_link_libraries(${PROJECT_NAME}_calibration_world 
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
@@ -72,9 +80,9 @@ target_link_libraries(calibration_world
 	yaml-cpp
 )
 
-add_definitions(-DDEBUG)
-
 #fin calib
+
+add_definitions(-DDEBUG)
 
 #############
 ## Install ##
