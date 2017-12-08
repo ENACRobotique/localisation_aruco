@@ -1,5 +1,9 @@
 #include <aruco_finder.h>
 
+//TODO add a correct use of ros time (real time is from ImConv
+//TODO finalise opti thread!
+//TODO if JeVois used create adapted define
+
 int main(int argc,char **argv){
 	if(argc!=2)
 		throw std::invalid_argument(
