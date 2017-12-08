@@ -56,7 +56,8 @@ public:
 
 };
 
-#define MAX_OPTI_WIN_HISTORY .10
+#define OLDEST_OPTI_MASK 0.25
+#define WATCHING_BOX_DIVIDER 2.25
 //classe qui gère la fenêtre d'optimisation (fenêtre ou d'autres arucos on été observé récement!)
 class OptiMask{
 public:
@@ -64,15 +65,22 @@ public:
 	std::recursive_mutex * r_mutex;
 	list<Mat> sliding_mask;
 	list<ros::Time> sliding_timestamp;
+	Mat staticMask;
 
-	void cleanOldMask();
-public:
-	Mat getOptiMask();
-	void updateOptiMask(vector<Marker>markers){};
-
+	//Constructers
 	OptiMask(){
 		r_mutex=new std::recursive_mutex ();
-	};
+	}
+	OptiMask(Size im_size);
+
+	void cleanOldMask();
+	void updateOptiMask(vector<Marker>markers);
+	Mat getOptiMask();
+
+
+private:
+	Rect2d watchingBindingBox(Marker marker,Size im_size);
+
 };
 
 #define PLOT_AXIS_LENGHT 0.25
@@ -108,7 +116,8 @@ public:
 
 	void RunOpti();
 
-
+private:
+	geometry_msgs::PoseStamped publishOneMarckerPose(Marker m);
 };
 
 void threadUseMaskOptimisation(MarkerProcesser *mark_process);

@@ -20,20 +20,24 @@ int main(int argc,char **argv){
 						 id_cam,
 						 in_topic,
 						 out_topic);
-
+	cout<<"Begin to Process!"<<endl;
 	int key;Mat im;
+	bool opt=false;
 	while((key=waitKey(1))!='x' &&
 		   key!=27){
-		//test.ImConv.getCurrentImage(&im);
-		test.DetectUpdateMaskPublish(false,&im);
+		if(key=='o')
+			opt^=true;
+		test.DetectUpdateMaskPublish(opt,&im);
 		imshow("main process",im);
+		imshow("optiMask",test.OptimisationMask.getOptiMask());
 	}
 
 }
 
+//-----------------IM CONVERTER---------------------------------
+
 ImageConverter::ImageConverter(string *topic) : it_(nh_)
 {
-	cout<< "top: "<<*topic<<endl;
   // subscribe to input video feed and publish output video feed
 	string default_top="/cam1";
 	if(topic==NULL){
@@ -88,6 +92,70 @@ void ImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
   return ;
 }
 
+//-----------------OPTI MASK---------------------------------
+
+OptiMask::OptiMask(Size im_size)
+	:OptiMask()
+{
+	staticMask=Mat(im_size, CV_8UC3, Scalar::all(0));
+};
+
+void OptiMask::cleanOldMask(){
+	list<ros::Time>::iterator time = sliding_timestamp.end();
+	while(sliding_timestamp.size()!=0 && time!=sliding_timestamp.begin()){
+		time--;//pour choisir le temps précedent
+		ros::Duration delta=ros::Time::now()-(*time);
+		if(delta >ros::Duration(OLDEST_OPTI_MASK )){
+			sliding_mask.pop_back();
+			sliding_timestamp.pop_back();
+		}
+		else
+			return;
+	}
+}
+
+Rect2d OptiMask::
+watchingBindingBox(Marker marker,Size im_size){
+	float cote=marker.getPerimeter()/WATCHING_BOX_DIVIDER;
+	Point2f centre=marker.getCenter();
+	int x=max((int)(centre.x-cote),0);
+	int y=max((int)(centre.y-cote),0);
+	Rect2d res = Rect2d(x,
+			  	  	    y,
+			            min((int)(cote*2),im_size.width-x),
+			            min((int)(cote*2),im_size.height-y));
+	return res;
+}
+
+void OptiMask::
+updateOptiMask(vector<Marker>markers){
+	Mat new_mask;
+	staticMask.copyTo(new_mask);
+	for(int i=0;i<markers.size();i++){
+		Rect2d box=watchingBindingBox(markers[i],
+									staticMask.size());
+		new_mask(box).setTo(Scalar::all(255));
+	}
+	sliding_mask.push_front(new_mask);
+	sliding_timestamp.push_front(ros::Time::now());
+
+	cleanOldMask();
+};
+
+Mat OptiMask::getOptiMask(){
+	Mat res_mat;
+	staticMask.copyTo(res_mat);
+	Mat WhiteMask(staticMask.size(), CV_8UC3, Scalar::all(255));
+
+	for(list<Mat>::iterator i=sliding_mask.begin();i!=sliding_mask.end();i++){
+		//res_mat((*i)).setTo(Scalar::all(255));
+		WhiteMask.copyTo(res_mat,(*i));
+	}
+	return res_mat;
+}
+
+//-----------------MARKER PROCESSER---------------------------------
+
 MarkerProcesser::
 MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic)
 	:ImConv(&in_topic)
@@ -109,9 +177,7 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in
 	//Config Camera Params & Optimask
 	cam_params.resize(current_image.size());
 	TheCameraParameters=cam_params;
-
-	//Masque d'optimisation
-	OptimisationMask=OptiMask();
+	OptimisationMask=OptiMask(current_image.size());
 
 	//Output Publisher
 	ros::NodeHandle n;
@@ -122,26 +188,31 @@ void MarkerProcesser::
 DetectUpdateMaskPublish(bool Opti,Mat* plot){
 
 	//get im and mask if needed
-	Mat current_im;
+	Mat current_im,trait_im;
 	ImConv.getCurrentImage(&current_im);
-
+	if(Opti){
+		current_im.copyTo(trait_im,OptimisationMask.getOptiMask());
+	}
+	else{
+		current_im.copyTo(trait_im);
+	}
 	//Detection
 	vector<Marker>markers;
-	MDetector.detect(current_im, markers, TheCameraParameters, TheMarkerSize);
+	MDetector.detect(trait_im, markers, TheCameraParameters, TheMarkerSize);
 
 	//update optimask
 	OptimisationMask.updateOptiMask(markers);
 	//plot if needed
 	if(plot!=NULL){
-		current_im.copyTo(*plot);
+		trait_im.copyTo(*plot);
 		aff_markers(markers,plot);
 	}
 	//publish
 	publishMarckersPose(markers);
 }
 
-
-static geometry_msgs::PoseStamped publishOneMarckerPose(Marker m,int id_cam)
+geometry_msgs::PoseStamped
+MarkerProcesser::publishOneMarckerPose(Marker m)
 {
 
 	float x_t, y_t, z_t,roll,yaw,pitch;
@@ -169,7 +240,7 @@ static geometry_msgs::PoseStamped publishOneMarckerPose(Marker m,int id_cam)
 	geometry_msgs::Pose pose;
 
 	//m.id = id_front;
-	msg_ps.header.frame_id =to_string(id_cam*1000+m.id);
+	msg_ps.header.frame_id =to_string(Cam_id*1000+m.id);
 	msg_ps.header.stamp = ros::Time::now();
 	pose.position.x = x_t;
 	pose.position.y = y_t;
@@ -179,12 +250,11 @@ static geometry_msgs::PoseStamped publishOneMarckerPose(Marker m,int id_cam)
 	return msg_ps;
 }
 
-
 void MarkerProcesser::
 publishMarckersPose(vector<Marker>markers){
 	for(int i =0;i<markers.size();i++){
 		geometry_msgs::PoseStamped msg=
-				publishOneMarckerPose(markers[i],Cam_id);
+				publishOneMarckerPose(markers[i]);
 		pose_pub_markers.publish(msg);
 	}
 }
@@ -212,12 +282,13 @@ aff_markers(vector<Marker>markers,Mat *plot){
 	}
 }
 
-
 void MarkerProcesser::
 RunOpti(){
 
 }
 
+
+//optimisation thread => use the opti mask
 void threadUseMaskOptimisation(MarkerProcesser *mark_process){
 	ros::Time ref= ros::TIME_MIN;
 	while(true){
