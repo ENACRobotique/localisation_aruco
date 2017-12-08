@@ -79,8 +79,27 @@ target_link_libraries(${PROJECT_NAME}_calibration_world
 	${WIRINGPI_LIBRARIES}
 	yaml-cpp
 )
-
 #fin calib
+
+## Process marker (Bloc indépendant)
+add_executable(${PROJECT_NAME}_marker_detection
+	src/aruco_finder.cpp
+	src/Utils.cpp
+	src/aruco_finder.h
+	src/Utils.h
+)
+set_target_properties(${PROJECT_NAME}_marker_detection PROPERTIES OUTPUT_NAME marker_detection PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_marker_detection ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_marker_detection 
+	${catkin_LIBRARIES}
+	${OpenCV_LIBS}
+	${aruco_LIBS}
+	${WIRINGPI_LIBRARIES}
+	yaml-cpp
+)
+#fin Process marker
 
 add_definitions(-DDEBUG)
 
