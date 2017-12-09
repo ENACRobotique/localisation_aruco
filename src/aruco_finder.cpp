@@ -246,7 +246,7 @@ MarkerProcesser::publishOneMarckerPose(Marker m)
 	geometry_msgs::Pose pose;
 
 	//m.id = id_front;
-	msg_ps.header.frame_id =to_string(Cam_id*1000+m.id);
+	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id);
 	msg_ps.header.stamp = ros::Time::now();
 	pose.position.x = x_t;
 	pose.position.y = y_t;

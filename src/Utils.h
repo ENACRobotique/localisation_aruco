@@ -35,6 +35,8 @@ template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+#define CAM_FRAME_MULTIPLIOR 1000
+
 Mat Rotation33(double alpha,double beta,double gamma);
 
 vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,

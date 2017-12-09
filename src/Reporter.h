@@ -31,9 +31,10 @@ typedef struct{
 	Pose World2Obj;
 }ProjectivPoses;
 
+#define POSE_MAX_NUMBER 100
 class PoseTempo{
 public:
-	list<geometry_msgs::PoseStamped> waiting_poses;
+	vector<geometry_msgs::PoseStamped> waiting_poses;
 
 	ros::NodeHandle nh_;
 	ros::Subscriber pose_sub;
@@ -47,28 +48,32 @@ public:
 	PoseTempo(string *topic=NULL);
 	~PoseTempo();
 
-	list<geometry_msgs::PoseStamped> getPose(list<int>markers_ids);
+	vector<geometry_msgs::PoseStamped> getPose(vector<Pose>markers_ids);
+	vector<geometry_msgs::PoseStamped> getPose(vector<int>ids);
 
 };
 
+#define OLDEST_TARGET .25
 class Target{
 public:
 	//sliding_windows of projectiv poses
-	list<ProjectivPoses> sliding_mask;
-
-	//contenaire des id targets à définir!
-
+	vector<ProjectivPoses> slidingPoses;
+	//complementary transformation
+	vector<Pose>Markers2Target;
+	vector<Pose>World2Cam;
 	//constructor
-	Target();
+	Target(){};
 
-	//
-	void getIds();
-	void setIds();
+	//for world and target transformation
+	void getTransf();
+	void getTransf();
 
-	void UpdateMarkers();
+	void updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses);
 	void publish(ros::Publisher publisher);
 	void aff_Cam_Projection(bool fusion=false);
 private:
+	void importPoses(vector<geometry_msgs::PoseStamped> new_poses);
+	void importPoses(vector<ProjectivPoses> new_poses);
 	ProjectivPoses reprojectNewMarker(Pose p);
 	void cleanOldPoses();
 	ProjectivPoses fusionDataFunction();
