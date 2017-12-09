@@ -3,6 +3,8 @@
 //TODO add a correct use of ros time (real time is from ImConv
 //TODO finalise opti thread!
 //TODO if JeVois used create adapted define
+//TODO add filtring function to delete/correct bad marker
+//TODO add yaml input
 
 int main(int argc,char **argv){
 	if(argc!=2)

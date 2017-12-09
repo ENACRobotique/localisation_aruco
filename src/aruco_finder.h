@@ -2,15 +2,6 @@
 #ifndef ARUCO_CUBE_H
 #define ARUCO_CUBE_H
 
-// STD
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <math.h>
-#include <unistd.h>
-#include <thread>
-#include <mutex>
-
 #ifdef RASPI
 //Raspi gpio lib
 #include <wiringPi.h>
@@ -19,18 +10,6 @@
 // UTILS
 #include <Utils.h>
 
-// ROS
-#include "ros/ros.h"
-#include <tf/transform_broadcaster.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PointStamped.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <visualization_msgs/Marker.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-
-#include <signal.h>
 
 
 // classe qui gère l'arrivée des images
@@ -43,16 +22,18 @@ class ImageConverter{
   std::recursive_mutex * r_mutex;
 
   ros::Time last_frame;
+
+  void imageCb(const sensor_msgs::ImageConstPtr& msg);
 public:
   ros::Time timestamp;
 
+  //Constructor, Destructor
   ImageConverter(string *topic=NULL);
-
   ~ImageConverter();
 
   void getCurrentImage(cv::Mat *input_image);
-  bool newImage(cv::Mat *input_image);
-  void imageCb(const sensor_msgs::ImageConstPtr& msg);
+//  bool newImage(cv::Mat *input_image);
+
 
 };
 
@@ -73,12 +54,11 @@ public:
 	}
 	OptiMask(Size im_size);
 
-	void cleanOldMask();
 	void updateOptiMask(vector<Marker>markers);
 	Mat getOptiMask();
 
-
 private:
+	void cleanOldMask();
 	Rect2d watchingBindingBox(Marker marker,Size im_size);
 
 };

@@ -101,6 +101,26 @@ target_link_libraries(${PROJECT_NAME}_marker_detection
 )
 #fin Process marker
 
+## Reporter (Bloc indépendant)
+add_executable(${PROJECT_NAME}_reporter
+	src/Reporter.cpp
+	src/Utils.cpp
+	src/Reporter.h
+	src/Utils.h
+)
+set_target_properties(${PROJECT_NAME}_reporter PROPERTIES OUTPUT_NAME reporter PREFIX "")
+
+add_dependencies(${PROJECT_NAME}_reporter ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(${PROJECT_NAME}_reporter 
+	${catkin_LIBRARIES}
+	${OpenCV_LIBS}
+	${aruco_LIBS}
+	${WIRINGPI_LIBRARIES}
+	yaml-cpp
+)
+#fin Process marker
+
 add_definitions(-DDEBUG)
 
 #############
