@@ -7,6 +7,12 @@
 
 #include "Reporter.h"
 
+bool allowed=true;
+void sig_stop(int a)
+{
+	allowed=false;
+}
+
 int main(int argc,char **argv){
 
 	if (argc!=2) {
@@ -20,7 +26,9 @@ int main(int argc,char **argv){
 	//READ INPUT
 	Reporter report(argv[1]);
 
-	for(int i=0;i<12;i++){
+	signal(SIGINT, sig_stop);
+	//for(int i=0;i<12;i++){
+	while(allowed){
 
 		report.processTargeting();
 
@@ -81,7 +89,6 @@ Pose multiPose(Pose a,Pose b){
 PoseTempo::PoseTempo(string topic)
 {
 	r_mutex=new std::recursive_mutex ();
-	cout<<"démarage topic"<<endl;
   //subscribe to input markers
 	if(topic==""){
 		return;
@@ -111,7 +118,8 @@ vector<geometry_msgs::PoseStamped>
 PoseTempo::
 getPose(vector<Pose>markers_ids){
 	vector<int>idS;
-	for(int i=0;i<markers_ids.size();i++)idS.push_back(markers_ids[i].id_transfo);
+	for(int i=0;i<markers_ids.size();i++)idS.push_back(
+			markers_ids[i].id_transfo/MARKER_FRAME_MULTIPLIOR);
 
 	return getPose(idS);
 }
@@ -126,7 +134,7 @@ getPose(vector<int>idS){
 		geometry_msgs::PoseStamped pose=waiting_poses[i];
 		int id=stoi(pose.header.frame_id)%CAM_FRAME_MULTIPLIOR;
 
-		if(std::find(idS.begin(), idS.end(), id)
+		if(std::find(idS.begin(), idS.end(), id/MARKER_FRAME_MULTIPLIOR)
 					!=idS.end()){
 			res.push_back( pose );
 			waiting_poses.erase( waiting_poses. begin() + i );
@@ -160,7 +168,6 @@ cleanOldPoses(){
 			old_pose != slidingPoses.begin(); ) {
 	     --old_pose;
 		ros::Duration delta=ros::Time::now()-(*old_pose).timestamped;
-		//cout<<(*old_pose).timestamped<<endl;
 		if(delta >ros::Duration(OLDEST_TARGET))
 			old_pose = slidingPoses.erase(old_pose);
 	  else
@@ -185,7 +192,7 @@ importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 
 		proj_pose.Cam2mark=interpose;
 		proj_pose.timestamped=new_poses[i].header.stamp;
-		//cout<<"stamp:"<<proj_pose.timestamped<<endl;
+
 		//begin reproject
 
 		//end reproject
@@ -256,19 +263,18 @@ readYAML(string yaml){
 			Pose p=readMarkerTransfo(target["markers"][j]);
 			p.id_transfo+=target["id_target"].as<int>()*TARGET_FRAME_MULTIPLIOR;
 			markers.push_back(p);
-			Targets.push_back(Target(cameras,markers));
 		}
+		Targets.push_back(Target(cameras,markers));
 	}
+
 }
 
 void  Reporter::processTargeting(){//TODO call this function in a thread
 
 	ros::spinOnce();
-	cout<<"taille tempo entrée: "<<tempo.waiting_poses.size()<<endl;
 	for(int i=0;i<Targets.size();i++){//TODO make a multithread here
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
 		Targets[i].updateProcessPublish(pose_temp);
 		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
 	}
-	cout<<"taille tempo sortie: "<<tempo.waiting_poses.size()<<endl;
 }
