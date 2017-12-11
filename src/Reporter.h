@@ -47,7 +47,7 @@ public:
 
 //public:
 	//constructor
-	PoseTempo(string *topic=NULL);
+	PoseTempo(string topic="");
 	~PoseTempo();
 
 	vector<geometry_msgs::PoseStamped> getPose(vector<Pose>markers_ids);
@@ -65,10 +65,7 @@ public:
 	vector<Pose>World2Cam;
 	//constructor
 	Target(){};
-
-	//for world and target transformation
-	void getTransf();
-	void setTransf();
+	Target(vector<Pose>cameras,vector<Pose>markers);
 
 	void updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses);
 	void publish(ros::Publisher publisher);
@@ -93,7 +90,7 @@ public:
 	ros::Publisher publisher_targets;
 
 	//constructor
-	Reporter(){};
+	Reporter(string yaml);
 
 	void readYAML(string yaml);
 	void readPose(YAML::Node pose_node,Pose &p);
@@ -101,7 +98,7 @@ public:
 	Pose readCamTransfo(YAML::Node pose_node);
 	void addTargets();
 	void deleteTargets();
-	void processTargetingOnce();
+	void processTargeting();
 
 };
 

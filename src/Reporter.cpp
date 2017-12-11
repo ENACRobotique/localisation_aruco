@@ -17,46 +17,13 @@ int main(int argc,char **argv){
 
 	ros::init(argc, argv, "Reporter");
 
-	//basic input
-	string in_topic="markers";
-
-	Reporter report;
 	//READ INPUT
-	report.readYAML(argv[1]);
+	Reporter report(argv[1]);
 
-	return 0;
+	for(int i=0;i<12;i++){
 
-	//target
-	Target cube16;
-	Pose temp={
-		.id_transfo=16,
-		.x=1,.y=0,.z=0,
-		.quat=tf::Quaternion(0,0,-0.707,0.707),
-		};
-	cube16.Markers2Target.push_back(temp);
-	temp.id_transfo=26;
-	cube16.Markers2Target.push_back(temp);
-	temp.id_transfo=36;
-	cube16.Markers2Target.push_back(temp);
+		report.processTargeting();
 
-	Mat cam2table=(Mat_<float>(3, 3 ) << 0.7071068, -0.7071068, 0,
-										        -0.055479, -0.055479, -0.9969173,
-										         0.704927, 0.704927, -0.0784591 );
-	temp.id_transfo=-CAM_FRAME_MULTIPLIOR*1;
-	temp.x=0;
-	temp.y=.33;
-	temp.z=0;
-	temp.quat=Mat2Quaternion(cam2table);
-	cube16.World2Cam.push_back(temp);
-
-
-	PoseTempo tempotest(&in_topic);
-
-	for(int i=0;i<50;i++){
-		ros::spinOnce();
-
-		vector<geometry_msgs::PoseStamped> pose_temp=tempotest.getPose(cube16.Markers2Target);
-		cube16.updateProcessPublish(pose_temp);
 		usleep(100000);
 	}
 
@@ -111,16 +78,15 @@ Pose multiPose(Pose a,Pose b){
 
 //--------------------------PoseTempo---------------------------------
 
-PoseTempo::PoseTempo(string *topic)
+PoseTempo::PoseTempo(string topic)
 {
-  //subscribe to input markers
-	string default_top="/markers";
-	if(topic==NULL){
-		topic=&default_top;
-	}
-	pose_sub = nh_.subscribe(*topic, 1, &PoseTempo::poseCb, this);
 	r_mutex=new std::recursive_mutex ();
-
+	cout<<"démarage topic"<<endl;
+  //subscribe to input markers
+	if(topic==""){
+		return;
+	}
+	pose_sub = nh_.subscribe(topic, 1, &PoseTempo::poseCb, this);
 }
 
 PoseTempo::~PoseTempo()
@@ -172,6 +138,10 @@ getPose(vector<int>idS){
 
 //--------------------------Target---------------------------------
 
+Target::Target(vector<Pose>cameras,vector<Pose>markers){
+	World2Cam=cameras;
+	Markers2Target=markers;
+}
 
 void Target::
 updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses){
@@ -190,7 +160,7 @@ cleanOldPoses(){
 			old_pose != slidingPoses.begin(); ) {
 	     --old_pose;
 		ros::Duration delta=ros::Time::now()-(*old_pose).timestamped;
-		cout<<(*old_pose).timestamped<<endl;
+		//cout<<(*old_pose).timestamped<<endl;
 		if(delta >ros::Duration(OLDEST_TARGET))
 			old_pose = slidingPoses.erase(old_pose);
 	  else
@@ -215,7 +185,7 @@ importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 
 		proj_pose.Cam2mark=interpose;
 		proj_pose.timestamped=new_poses[i].header.stamp;
-		cout<<"stamp:"<<proj_pose.timestamped<<endl;
+		//cout<<"stamp:"<<proj_pose.timestamped<<endl;
 		//begin reproject
 
 		//end reproject
@@ -232,53 +202,11 @@ importPoses(vector<ProjectivPoses> new_poses){
 
 //--------------------------Reporter---------------------------------
 
-namespace YAML {
-template<>
-struct convert<Pose> {
-  static YAML::Node encode(const Pose& p) {
-	YAML::Node node;
-    node.push_back(p.id_transfo);
-    node.push_back(p.x);
-    node.push_back(p.y);
-    node.push_back(p.z);
-    node.push_back(p.quat);
-    return node;
-  }
-  static bool decode(const YAML::Node& node, Pose& p) {
-    if(!node.IsSequence() || node.size() != 3) {
-      return false;
-    }
-    cout<<"coucou"<<endl;
-    p.x = node[0].as<double>();
-    p.y = node[1].as<double>();
-    p.z = node[2].as<double>();
-    return true;
-  }
-};
-template<>
-struct convert<tf::Quaternion> {
-  static YAML::Node encode(const tf::Quaternion& q) {
-	YAML::Node node;
-    node.push_back(q.w());
-    node.push_back(q.x());
-    node.push_back(q.y());
-    node.push_back(q.z());
-    return node;
-  }
-  static bool decode(const YAML::Node& node, tf::Quaternion& q) {
-    if(!node.IsSequence() || node.size() != 3) {
-      return false;
-    }
-    cout<<"coucou"<<endl;
-    q=tf::Quaternion(node[1].as<double>(),
-    			 	 node[2].as<double>(),
-					 node[3].as<double>(),
-					 node[0].as<double>());
-    return true;
-  }
-};
+Reporter::Reporter(string yaml)
+	:tempo(YAML::LoadFile(yaml)["topic_in"].as<string>())
+{
+	readYAML(yaml);
 }
-
 
 
 void Reporter::
@@ -313,33 +241,34 @@ readMarkerTransfo(YAML::Node pose_node){
 
 void Reporter::
 readYAML(string yaml){
-	cout<< "input yaml:"<<yaml<<endl;
 	YAML::Node config = YAML::LoadFile(yaml);
-	cout<<"top in "<<config["topic_in"]<<endl;
-	cout<<"top out"<<config["topic_out"]<<endl;
-	cout<<"lenght of targets"<<config["targets"].size()<<endl;
 
 	//read all targets
 	vector<Pose>cameras;
 	for(int i=0;i<config["cameras"].size();i++){
 		cameras.push_back(readCamTransfo(config["cameras"][i]));
 	}
-	for(int i=0;i<cameras.size();i++){
-		plot_pose(cameras[i]);
-	}
-	//read all targets
+	//read/create all targets
 	for(int i=0;i<config["targets"].size();i++){
 		YAML::Node target=config["targets"][i];
-		cout<<"target ID: "<<target["id_target"]<<endl;
-		vector<Pose>poses;
+		vector<Pose>markers;
 		for(int j=0;j<target["markers"].size();j++){
 			Pose p=readMarkerTransfo(target["markers"][j]);
 			p.id_transfo+=target["id_target"].as<int>()*TARGET_FRAME_MULTIPLIOR;
-			poses.push_back(p);
-		}
-		for(int j=0;j<poses.size();j++){
-			plot_pose(poses[j]);
+			markers.push_back(p);
+			Targets.push_back(Target(cameras,markers));
 		}
 	}
+}
 
+void  Reporter::processTargeting(){//TODO call this function in a thread
+
+	ros::spinOnce();
+	cout<<"taille tempo entrée: "<<tempo.waiting_poses.size()<<endl;
+	for(int i=0;i<Targets.size();i++){//TODO make a multithread here
+		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
+		Targets[i].updateProcessPublish(pose_temp);
+		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
+	}
+	cout<<"taille tempo sortie: "<<tempo.waiting_poses.size()<<endl;
 }
