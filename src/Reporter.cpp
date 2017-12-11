@@ -21,6 +21,7 @@ int main(int argc,char **argv){
 		return false;
 	}
 
+
 	ros::init(argc, argv, "Reporter");
 
 	//READ INPUT
@@ -152,13 +153,12 @@ Target::Target(vector<Pose>cameras,vector<Pose>markers){
 }
 
 void Target::
-updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses){
+updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 	importPoses(new_poses);
 	cleanOldPoses();
 
 	//fusion
 
-	//publish
 }
 
 
@@ -195,6 +195,9 @@ importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 
 		//begin reproject
 
+		reproject(proj_pose);
+		cout<<"------------ID"<<proj_pose.Cam2mark.id_transfo<<"-------------------"<<endl;
+		plot_pose(proj_pose.World2Obj);
 		//end reproject
 		res.push_back(proj_pose);
 	}
@@ -205,8 +208,32 @@ void Target::
 importPoses(vector<ProjectivPoses> new_poses){
 	slidingPoses.insert(slidingPoses.begin(),new_poses.begin(),new_poses.end());
 }
+void Target::reproject(ProjectivPoses& p){
+	//id of the marker and cam
+	int id_cam=p.Cam2mark.id_transfo/CAM_FRAME_MULTIPLIOR;
+	int idMark=(p.Cam2mark.id_transfo%CAM_FRAME_MULTIPLIOR)/MARKER_FRAME_MULTIPLIOR;
+	//id u=in the vector Markers2Target & World2Cam
+	id_cam= find_id_pose(     World2Cam,id_cam,   CAM_FRAME_MULTIPLIOR,INT_MAX);
+	idMark= find_id_pose(Markers2Target,idMark,MARKER_FRAME_MULTIPLIOR,CAM_FRAME_MULTIPLIOR);
+	if(id_cam<0 || idMark<0)
+		return ;
+	//reprojection
+	p.Cam2Obj=multiPose(p.Cam2mark,Markers2Target[idMark]);
+	p.Cam2Obj.id_transfo*=-1;
+	p.World2Obj=multiPose(World2Cam[id_cam],p.Cam2Obj);
+	p.World2Obj.id_transfo*=-1;
+	p.Cam2Obj.id_transfo+=p.World2Obj.id_transfo*2;
 
+}
 
+int Target::find_id_pose(vector<Pose> in,int id,int offset,int max){
+	for(int i=0;i<in.size();i++){
+		if((in[i].id_transfo%max)/offset==id){
+			return i;
+		}
+	}
+	return -1;
+}
 //--------------------------Reporter---------------------------------
 
 Reporter::Reporter(string yaml)
@@ -274,7 +301,8 @@ void  Reporter::processTargeting(){//TODO call this function in a thread
 	ros::spinOnce();
 	for(int i=0;i<Targets.size();i++){//TODO make a multithread here
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
-		Targets[i].updateProcessPublish(pose_temp);
+		Targets[i].updateProcess(pose_temp);
+		//Targets[i].publish(publisher_targets);TODO
 		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
 	}
 }

@@ -67,18 +67,19 @@ public:
 	Target(){};
 	Target(vector<Pose>cameras,vector<Pose>markers);
 
-	void updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses);
+	void updateProcess(vector<geometry_msgs::PoseStamped> new_poses);
 	void publish(ros::Publisher publisher);
 	void aff_Cam_Projection(bool fusion=false);
 //private:
 	void importPoses(vector<geometry_msgs::PoseStamped> new_poses);
 	void importPoses(vector<ProjectivPoses> new_poses);
+	void reproject(ProjectivPoses& p);
 	ProjectivPoses reprojectNewMarker(Pose p);
 	void cleanOldPoses();
 	ProjectivPoses fusionDataFunction();
 
 	void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
-
+	int find_id_pose(vector<Pose> in,int id,int offset,int max);
 };
 
 class Reporter{
