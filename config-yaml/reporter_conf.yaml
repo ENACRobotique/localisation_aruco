@@ -1,0 +1,34 @@
+%YAML:1.0
+
+topic_in: markers #topic ROS qui publie les markers
+topic_out: localisation #topic ROS qui publira les données robots
+
+
+targets: #define all targeted object
+  - id_target: 1
+    markers:
+    - id_marker: 16
+      translation: [1,2,3]
+      rotation: [4,3,2,1] #w,x,y,z
+    - id_marker: 26
+      translation: [4,5,6]
+      rotation: [4,3,2,1] #w,x,y,z
+    - id_marker: 36
+      translation: [7,8,9]
+      rotation: [4,3,2,1] #w,x,y,z
+  - id_target: 2
+    markers:
+    - id_marker: 15
+      translation: [101,1001,10001]
+      rotation: [0,0,0,0] #w,x,y,z
+    - id_marker: 35
+      translation: [101,1001,10001]
+      rotation: [1.2,1.3,1.4,1.5] #w,x,y,z
+
+cameras:
+  - id_cam: 1
+    translation: [2,4,2]
+    rotation: [6,9,6,9] #w,x,y,z
+  - id_cam: 2
+    translation: [0,2,0]
+    rotation: [4,4,4,4] #w,x,y,z

@@ -221,37 +221,36 @@ geometry_msgs::PoseStamped
 MarkerProcesser::publishOneMarckerPose(Marker m)
 {
 
-	float x_t, y_t, z_t,roll,yaw,pitch;
+	float x_t, y_t, z_t;
 	x_t =  m.Tvec.at<Vec3f>(0,0)[0];
 	y_t =  m.Tvec.at<Vec3f>(0,0)[1];
 	z_t =  m.Tvec.at<Vec3f>(0,0)[2];
 
-	yaw   =  atan2(m.Rvec.at<float>(1,0), m.Rvec.at<float>(0,0));
-	if(abs(m.Rvec.at<float>(2,2))>10e-3)
-		roll  =  atan2(m.Rvec.at<float>(2,1), m.Rvec.at<float>(2,2));
-	else
-		roll  = M_PI*sgn( m.Rvec.at<float>(2,1) );
-	double square=pow( pow(m.Rvec.at<float>(2,1),2)+
-					   pow(m.Rvec.at<float>(2,2),2) ,.5);
-	pitch =  atan2(-m.Rvec.at<float>(2,0), square);
-	geometry_msgs::Quaternion p_quat = tf::createQuaternionMsgFromRollPitchYaw(roll, pitch, yaw	);
+	tf::Quaternion tf_quat=Mat2Quaternion(m.Rvec);
+	geometry_msgs::Quaternion quat;
+ 	tf::quaternionTFToMsg (tf_quat,quat);
+
 
 	// See: http://en.wikipedia.org/wiki/Flight_dynamics
 #ifdef PRINT_POSE
+	cout<<"------------rotation-----------"<<endl;
+	double roll,pitch,yaw;
+	tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
 	printf( "Angle >> roll: %5.3f pitch: %5.3f yaw: %5.3f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
 	printf( "Dist. >>  x_d: %5.3f   y_d: %5.3f z_d: %5.3f \n", x_t, y_t, z_t);
+	cout<<"------------end rotation-----------"<<endl;
 #endif
 	// Now publish the pose message, remember the offsets
 	geometry_msgs::PoseStamped msg_ps;
 	geometry_msgs::Pose pose;
 
 	//m.id = id_front;
-	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id);
+	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id*MARKER_FRAME_MULTIPLIOR);
 	msg_ps.header.stamp = ros::Time::now();
 	pose.position.x = x_t;
 	pose.position.y = y_t;
 	pose.position.z = z_t;
-	pose.orientation = p_quat;
+	pose.orientation = quat;
 	msg_ps.pose = pose;
 	return msg_ps;
 }

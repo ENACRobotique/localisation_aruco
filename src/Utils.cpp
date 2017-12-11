@@ -1,5 +1,23 @@
 #include <Utils.h>
 
+
+tf::Quaternion Mat2Quaternion(Mat r){
+
+	if(r.size()!=Size(3,3))
+		Rodrigues(r,r);//transform vect to matrix
+	double roll,yaw,pitch;
+	yaw   =  atan2(r.at<float>(1,0), r.at<float>(0,0));
+	if(abs(r.at<float>(2,2))>10e-3)
+		roll  =  atan2(r.at<float>(2,1), r.at<float>(2,2));
+	else
+		roll  = M_PI*sgn( r.at<float>(2,1) );
+	double square=pow( pow(r.at<float>(2,1),2)+
+					   pow(r.at<float>(2,2),2) ,.5);
+	pitch =  atan2(-r.at<float>(2,0), square);
+	return tf::createQuaternionFromRPY(roll, pitch, yaw);
+}
+
+
 Mat Rotation33(double alpha,double beta,double gamma){
     // Rotation matrices around the X, Y, and Z axis
     Mat RX = (Mat_<float>(3, 3 ) <<

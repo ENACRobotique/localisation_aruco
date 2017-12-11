@@ -17,10 +17,7 @@ typedef struct{
 	double y;
 	double z;
 	//Quaternion
-	double qw;
-	double qx;
-	double qy;
-	double qz;
+	tf::Quaternion quat;
 }Pose;
 
 typedef struct{
@@ -30,6 +27,11 @@ typedef struct{
 	Pose Cam2Obj;
 	Pose World2Obj;
 }ProjectivPoses;
+
+void plot_pose(Pose p);
+void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
+Pose invPose(Pose p);
+Pose multiPose(Pose a,Pose b);
 
 #define POSE_MAX_NUMBER 100
 class PoseTempo{
@@ -66,31 +68,37 @@ public:
 
 	//for world and target transformation
 	void getTransf();
-	void getTransf();
+	void setTransf();
 
 	void updateProcessPublish(vector<geometry_msgs::PoseStamped> new_poses);
 	void publish(ros::Publisher publisher);
 	void aff_Cam_Projection(bool fusion=false);
-private:
+//private:
 	void importPoses(vector<geometry_msgs::PoseStamped> new_poses);
 	void importPoses(vector<ProjectivPoses> new_poses);
 	ProjectivPoses reprojectNewMarker(Pose p);
 	void cleanOldPoses();
 	ProjectivPoses fusionDataFunction();
 
+	void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
+
 };
 
 class Reporter{
 public:
-	list<Target> Targets;
+	vector<Target> Targets;
 
 	//input and output of the system
 	PoseTempo tempo;
 	ros::Publisher publisher_targets;
 
 	//constructor
-	Reporter();
+	Reporter(){};
 
+	void readYAML(string yaml);
+	void readPose(YAML::Node pose_node,Pose &p);
+	Pose readMarkerTransfo(YAML::Node pose_node);
+	Pose readCamTransfo(YAML::Node pose_node);
 	void addTargets();
 	void deleteTargets();
 	void processTargetingOnce();

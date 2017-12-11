@@ -31,11 +31,17 @@ using namespace aruco;
 
 #include <signal.h>
 
+#include <yaml-cpp/yaml.h>
+
 template <typename T> inline int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-#define CAM_FRAME_MULTIPLIOR 1000
+#define CAM_FRAME_MULTIPLIOR 100000
+#define MARKER_FRAME_MULTIPLIOR 100
+#define TARGET_FRAME_MULTIPLIOR 1
+
+tf::Quaternion Mat2Quaternion(Mat r);
 
 Mat Rotation33(double alpha,double beta,double gamma);
 
