@@ -16,6 +16,8 @@ int main(int argc,char **argv){
 	MarkerProcesser test(argv[1]);
 	cout<<"Begin to Process!"<<endl;
 
+	std::thread thread_opti(threadUseMaskOptimisation, &test);
+
 	int key;Mat im;bool opt=false;
 	while((key=waitKey(1))!='x' && key!=27){
 
@@ -47,6 +49,12 @@ ImageConverter::~ImageConverter()
 {
   image_sub_.shutdown();
   printf("\n>> ROS Stopped Image Import \n");
+}
+
+void ImageConverter::getLastImage(cv::Mat *input_image) {
+	(*r_mutex).lock();
+	*input_image = src_img;
+	(*r_mutex).unlock();
 }
 
 void ImageConverter::getCurrentImage(cv::Mat *input_image) {
@@ -125,6 +133,9 @@ watchingBindingBox(Marker marker,Size im_size){
 void OptiMask::
 updateOptiMask(vector<Marker>markers){
 	Mat new_mask;
+
+	(*r_mutex).lock();
+
 	staticMask.copyTo(new_mask);
 	for(int i=0;i<markers.size();i++){
 		Rect2d box=watchingBindingBox(markers[i],
@@ -135,17 +146,24 @@ updateOptiMask(vector<Marker>markers){
 	sliding_timestamp.push_front(ros::Time::now());
 
 	cleanOldMask();
+
+	(*r_mutex).unlock();
 };
 
 Mat OptiMask::getOptiMask(){
 	Mat res_mat;
+
+	(*r_mutex).lock();
+
 	staticMask.copyTo(res_mat);
 	Mat WhiteMask(staticMask.size(), CV_8UC3, Scalar::all(255));
 
 	for(list<Mat>::iterator i=sliding_mask.begin();i!=sliding_mask.end();i++){
-		//res_mat((*i)).setTo(Scalar::all(255));
 		WhiteMask.copyTo(res_mat,(*i));
 	}
+
+	(*r_mutex).unlock();
+
 	return res_mat;
 }
 
@@ -181,6 +199,8 @@ MarkerProcesser::
 MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic)
 	:ImConv(in_topic)
 {
+	r_save=new std::recursive_mutex ();
+
 	//detect marker
 	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 	//Minimum parameters
@@ -212,9 +232,19 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in
 void MarkerProcesser::
 DetectUpdateMaskPublish(bool Opti,Mat* plot){
 
-	//get im and mask if needed
+	(*r_save).lock();
+	ros::spinOnce();
+	(*r_save).unlock();
+
+	//get im
 	Mat current_im,trait_im;
-	ImConv.getCurrentImage(&current_im);
+	if(Opti)
+		ImConv.getCurrentImage(&current_im);
+	else
+		ImConv.getLastImage(&current_im);
+
+	ros::Time mesure_temps=ros::Time::now();
+	//apply mask if needed
 	if(Opti){
 		current_im.copyTo(trait_im,OptimisationMask.getOptiMask());
 	}
@@ -223,7 +253,9 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 	}
 	//Detection
 	vector<Marker>markers;
+	(*r_save).lock();
 	MDetector.detect(trait_im, markers, TheCameraParameters, TheMarkerSize);
+	(*r_save).unlock();
 
 	//update optimask
 	OptimisationMask.updateOptiMask(markers);
@@ -233,7 +265,11 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 		aff_markers(markers,plot);
 	}
 	//publish
+
+	(*r_save).lock();
 	publishMarckersPose(markers);
+	cout<<"Time:"<<(ros::Time::now()-mesure_temps)*1000<<" ms"<<endl;
+	(*r_save).unlock();
 }
 
 geometry_msgs::PoseStamped
@@ -306,20 +342,12 @@ aff_markers(vector<Marker>markers,Mat *plot){
 	}
 }
 
-void MarkerProcesser::
-RunOpti(){
-
-}
-
 
 //optimisation thread => use the opti mask
 void threadUseMaskOptimisation(MarkerProcesser *mark_process){
-	ros::Time ref= ros::TIME_MIN;
 	while(true){
-        ros::spinOnce();
 		ros::Time test=ros::Time::now();
-		mark_process->RunOpti();
-		//cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
-		ref=mark_process->ImConv.timestamp;
+		mark_process->DetectUpdateMaskPublish(true);
+		cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
 	}
 }

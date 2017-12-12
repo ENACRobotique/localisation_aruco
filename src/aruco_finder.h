@@ -32,6 +32,7 @@ public:
   ~ImageConverter();
 
   void getCurrentImage(cv::Mat *input_image);
+  void getLastImage(cv::Mat *input_image);
 //  bool newImage(cv::Mat *input_image);
 
 
@@ -83,6 +84,7 @@ public:
 
 	//Output Publisher
 	ros::Publisher pose_pub_markers;
+	std::recursive_mutex * r_save;
 
 	//Constructeurs
 	MarkerProcesser(string yaml);
