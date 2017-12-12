@@ -11,6 +11,10 @@
 #include <thread>
 #include <mutex>
 
+#ifdef RASPI
+//Raspi gpio lib
+#include <wiringPi.h>
+#endif
 
 // ARUCO
 #include "aruco.h"
@@ -57,7 +61,6 @@ vector<Point3f>Axes3D(float size);
 void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed=false,const Scalar color=Scalar::all(255),
                   int thickness=1, int lineType=8, int shift=0);
 
-#define SIGNAL_ARRIVEE_IM 46
 // classe qui gère l'arrivée des images
 class ImageConverter{
   Mat src_img;
@@ -135,7 +138,7 @@ Mat Rot_Face(int FACE_CUBE );
 
 #define DELTA_FACE 10
 #define DEFAULT_CUBE_SIZE 0.073 //en m
-#define DEFAULT_USELESS_TIME .10 //en s => 10Hz
+#define DEFAULT_USELESS_TIME .50 //en s => 2Hz
 
 class aruco_cube{
 public:

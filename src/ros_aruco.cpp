@@ -58,7 +58,18 @@ void sig_stop(int a)
 {
 	allowed=false;
 }
+#ifdef RASPI
+#define PROCESS_LED 2
+#define PROCESS_INTERUPT 4
+#endif
 int main(int argc,char **argv) {
+#ifdef RASPI
+	wiringPiSetup () ;
+	pinMode(PROCESS_LED,OUTPUT);
+	bool led_status=true;
+	pinMode(PROCESS_INTERUPT,INPUT);
+	pullUpDnControl (PROCESS_INTERUPT,PUD_UP) ;
+#endif
 	//rend le process plus rapide, ou plutot moins interrompu
 	setpriority(PRIO_PROCESS, getpid(), 10);
 
@@ -138,7 +149,16 @@ int main(int argc,char **argv) {
 	char key=0;
 //------------------LOOP----------------------------------------------------
 	// Capture until press ESC or until the end of the video
-	while ((key != 'x') && (key != 27) && ros::ok()&& allowed) {
+	while ((key != 'x') && (key != 27) && ros::ok()&& allowed
+#ifdef RASPI
+	&& digitalRead(PROCESS_INTERUPT)
+#endif
+			) {
+#ifdef RASPI
+		led_status^=1;
+		digitalWrite(PROCESS_LED,led_status);
+#endif
+
 #ifdef FPS_TEST
 		mesure_temps=ros::Time::now();
 #endif

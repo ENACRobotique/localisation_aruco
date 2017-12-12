@@ -14,9 +14,20 @@ void sig_stop(int a)
 {
 	allowed=false;
 }
+#ifdef RASPI
+#define CALIB_LED 0
+#define CALIB_INTERUPT 1
+#endif
 
 int main(int argc,char **argv) {
 
+#ifdef RASPI
+	wiringPiSetup () ;
+	bool led_status=true;
+	pinMode(CALIB_LED,OUTPUT);
+	pinMode(CALIB_INTERUPT,INPUT);
+	pullUpDnControl (CALIB_INTERUPT,PUD_UP) ;
+#endif
     // ROS messaging init
 	ros::init(argc, argv, "aruco_cube_publisher");
 
@@ -33,12 +44,12 @@ int main(int argc,char **argv) {
 	ConfigFile=argv[1];
 	YAML::Node config = YAML::LoadFile(ConfigFile);
 	FileStorage fs2(ConfigFile, FileStorage::READ);
-	if(!config["marker_size"]||!config["topic"]||!config["marker_id"]||
+	if(!config["marker_size_calib"]||!config["topic"]||!config["marker_id"]||
 	   fs2["rotMarker2World"  ].empty()||fs2["transMarker2World"].empty())
 		throw invalid_argument( "the data YAML need more arguments!" );
 
 	//read params
-	TheMarkerSize=config["marker_size"].as<float>();
+	TheMarkerSize=config["marker_size_calib"].as<float>();
 	topic="/"+config["topic"].as<string>();
 	CalibMarkerID=config["marker_id"].as<int>();
 	TheCameraParameters.readFromXMLFile(ConfigFile);
@@ -62,24 +73,37 @@ int main(int argc,char **argv) {
 	vector<Marker>TheMarkers;
 	//end config
 	signal(SIGINT, sig_stop);
-	char key;
+	char key;int id_mark;
 	Mat rot_cam2World,trans_cam2World;
 #ifdef DEBUG
 	cv::namedWindow("Calib_view", 1);
 #endif
 
-	while(allowed && (key != 'x') && (key != 27)&& ros::ok() ){
 
+	while(allowed && (key != 'x') && (key != 27)&& ros::ok()
+#ifdef RASPI
+	&& digitalRead(CALIB_INTERUPT)
+#endif
+	     ){
+#ifdef RASPI
+		led_status^=1;
+		digitalWrite(CALIB_LED,led_status);
+#endif
 		image_getter.getCurrentImage(&current_image);
 		MDetector.detect(current_image, TheMarkers, TheCameraParameters, TheMarkerSize);
-		if(TheMarkers.size()==1&& TheMarkers[0].id==CalibMarkerID){
+		id_mark=-1;
+		for(int i=0;i<TheMarkers.size();i++){
+			if(TheMarkers[i].id==CalibMarkerID)
+				id_mark=i;
+		}
+		if(id_mark>=0){
 
-			TheMarkers[0].draw(current_image,Scalar(0,255,0),3,true);
+			TheMarkers[id_mark].draw(current_image,Scalar(0,255,0),3,true);
 
 			//calibration
 
-			Rodrigues(TheMarkers[0].Rvec,rot_cam2World);
-			trans_cam2World=TheMarkers[0].Tvec+rot_cam2World*(transM2W+transCenter2RightDown);
+			Rodrigues(TheMarkers[id_mark].Rvec,rot_cam2World);
+			trans_cam2World=TheMarkers[id_mark].Tvec+rot_cam2World*(transM2W+transCenter2RightDown);
 
 			rot_cam2World*=rotM2W;
 			EasyPolyLine(&current_image,
@@ -94,7 +118,22 @@ int main(int argc,char **argv) {
 #endif
 		key=waitKey(1);
 	}
+
+	bool success=( (int)rot_cam2World.size().height )>0;
+#ifdef RASPI
+	digitalWrite(CALIB_LED,success);
+#endif
 	cout<<"Fin de la calibration"<<endl;
 	cout<<"rotationC2W:"<<endl<<rot_cam2World<<endl<<endl;
 	cout<<"translationC2W:"<<endl<<trans_cam2World<<endl<<endl;
+	cout<<"->Réusite:"<<success<<endl;
+
+	//Save
+	FileStorage fs(ConfigFile, FileStorage::APPEND);
+	cvWriteComment(*fs, "info created by the calibration algo", 0);
+	//fs <<"#info created by the calibration algo";
+	fs << "cam2table_rot"   <<   rot_cam2World;  
+	fs << "cam2table_trans" << trans_cam2World;  
+
+	fs.release();    
 }
