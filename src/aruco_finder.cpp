@@ -1,6 +1,6 @@
 #include <aruco_finder.h>
 
-//TODO add a correct use of ros time (real time is from ImConv
+//TODO add a correct use of ros time (real time is from ImConv)
 //TODO finalise opti thread!
 //TODO if JeVois used create adapted define
 //TODO add filtring function to delete/correct bad marker
@@ -12,45 +12,34 @@ int main(int argc,char **argv){
 				"Le nombre d'argument est mauvais.\nDonnez un yaml de config.");
 
 	ros::init(argc, argv, "marker_detection");
-	CameraParameters cam_params;
-	string in_conf=(string)argv[1];
-	cam_params.readFromXMLFile(in_conf);
-	float mark_size=.067;
-	int id_cam=1;
-	string in_topic="cam1";
-	string out_topic="markers";
 
-
-	MarkerProcesser test(cam_params,
-						 mark_size,
-						 id_cam,
-						 in_topic,
-						 out_topic);
+	MarkerProcesser test(argv[1]);
 	cout<<"Begin to Process!"<<endl;
-	int key;Mat im;
-	bool opt=false;
-	while((key=waitKey(1))!='x' &&
-		   key!=27){
+
+	int key;Mat im;bool opt=false;
+	while((key=waitKey(1))!='x' && key!=27){
+
 		if(key=='o')
 			opt^=true;
+
 		test.DetectUpdateMaskPublish(opt,&im);
 		imshow("main process",im);
 		imshow("optiMask",test.OptimisationMask.getOptiMask());
 	}
-
 }
 
 //-----------------IM CONVERTER---------------------------------
 
-ImageConverter::ImageConverter(string *topic) : it_(nh_)
+ImageConverter::ImageConverter(string topic) : it_(nh_)
 {
+	r_mutex=new std::recursive_mutex ();
   // subscribe to input video feed and publish output video feed
 	string default_top="/cam1";
-	if(topic==NULL){
-		topic=&default_top;
+	if(topic==""){
+		return;
 	}
-	image_sub_ = it_.subscribe(*topic, 1, &ImageConverter::imageCb, this);
-	r_mutex=new std::recursive_mutex ();
+	image_sub_ = it_.subscribe(topic, 1, &ImageConverter::imageCb, this);
+
 
 }
 
@@ -163,14 +152,47 @@ Mat OptiMask::getOptiMask(){
 //-----------------MARKER PROCESSER---------------------------------
 
 MarkerProcesser::
+MarkerProcesser(string yaml)
+	:MarkerProcesser(
+			CameraParameters(),
+		    YAML::LoadFile(yaml)["marker_size"].as<float>(),
+		    YAML::LoadFile(yaml)["id_camera"].as<int>(),
+		    YAML::LoadFile(yaml)["topic_in"].as<string>(),
+		    YAML::LoadFile(yaml)["topic_out"].as<string>())
+{
+
+	CameraParameters cam_params;
+	cam_params.readFromXMLFile(yaml);
+	//wait a image
+	Mat current_image;
+	while (current_image.empty()) {
+		ros::spinOnce();
+		ImConv.getCurrentImage(&current_image);
+		usleep(1000);
+	}
+
+	//Config Camera Params & Optimask
+	cam_params.resize(current_image.size());
+	TheCameraParameters=cam_params;
+	OptimisationMask=OptiMask(current_image.size());
+}
+
+MarkerProcesser::
 MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic)
-	:ImConv(&in_topic)
+	:ImConv(in_topic)
 {
 	//detect marker
 	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 	//Minimum parameters
 	Cam_id=id_cam;
 	TheMarkerSize=mark_size;
+
+	//Output Publisher
+	ros::NodeHandle n;
+	pose_pub_markers= n.advertise<geometry_msgs::PoseStamped>(out_topic, 1);
+
+	if( cam_params.CamSize.height <= 0 || cam_params.CamSize.width <= 0  )
+		return ;
 
 	//wait a image
 	Mat current_image;
@@ -185,9 +207,6 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in
 	TheCameraParameters=cam_params;
 	OptimisationMask=OptiMask(current_image.size());
 
-	//Output Publisher
-	ros::NodeHandle n;
-	pose_pub_markers= n.advertise<geometry_msgs::PoseStamped>(out_topic, 1);
 }
 
 void MarkerProcesser::

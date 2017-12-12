@@ -1,0 +1,31 @@
+%YAML:1.0
+
+##Cam params
+id_camera: 1
+image_width: 640
+image_height: 480
+
+camera_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [590.472836, 0.000000, 278.646600, 0.000000, 589.171626, 256.813418, 0.000000, 0.000000, 1.000000]
+
+distortion_model: plumb_bob
+distortion_coefficients: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: d
+  data: [-0.037296, 0.045979, 0.011453, -0.014145, 0.000000]
+
+projection_matrix: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: d
+  data: [587.107361, 0.000000, 270.356537, 0.000000, 0.000000, 590.964478, 261.569585, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
+##end cam params
+
+
+topic_in: cam1 #topic ROS qui publie la vidéo
+topic_out: markers #topic de sortie
+marker_size: 0.067 #m

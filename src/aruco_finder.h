@@ -28,7 +28,7 @@ public:
   ros::Time timestamp;
 
   //Constructor, Destructor
-  ImageConverter(string *topic=NULL);
+  ImageConverter(string topic="");
   ~ImageConverter();
 
   void getCurrentImage(cv::Mat *input_image);
@@ -85,6 +85,7 @@ public:
 	ros::Publisher pose_pub_markers;
 
 	//Constructeurs
+	MarkerProcesser(string yaml);
 	MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic);
 	
 	//Main Function!
