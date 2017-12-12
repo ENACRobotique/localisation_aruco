@@ -1,10 +1,10 @@
 #include <aruco_finder.h>
 
 //TODO add a correct use of ros time (real time is from ImConv)
-//TODO finalise opti thread!
 //TODO if JeVois used create adapted define
 //TODO add filtring function to delete/correct bad marker
-//TODO add yaml input
+
+//#define PLOT
 
 int main(int argc,char **argv){
 	if(argc!=2)
@@ -25,8 +25,10 @@ int main(int argc,char **argv){
 			opt^=true;
 
 		test.DetectUpdateMaskPublish(opt,&im);
+#ifdef PLOT
 		imshow("main process",im);
 		imshow("optiMask",test.OptimisationMask.getOptiMask());
+#endif
 	}
 }
 
