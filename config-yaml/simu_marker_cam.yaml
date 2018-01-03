@@ -1,0 +1,31 @@
+%YAML:1.0
+
+##Cam params
+id_camera: 1
+image_width: 480
+image_height: 480
+
+camera_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [480.0, 0.0, 240.0, 0.0, 480.0, 240.0, 0.0, 0.0, 1.0]
+
+distortion_model: plumb_bob
+distortion_coefficients: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: d
+  data: [0,0,0,0,0]
+
+projection_matrix: !!opencv-matrix
+  rows: 3
+  cols: 4
+  dt: d
+  data: [480.0, 0.0, 240.0, 0.0, 0.0, 480.0, 240.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+##end cam params
+
+
+topic_in: /robot2/videocamera/image #topic ROS qui publie la vidéo
+topic_out: markers #topic de sortie
+marker_size: 0.067 #m

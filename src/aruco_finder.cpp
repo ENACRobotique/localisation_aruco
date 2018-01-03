@@ -11,7 +11,10 @@ int main(int argc,char **argv){
 		throw std::invalid_argument(
 				"Le nombre d'argument est mauvais.\nDonnez un yaml de config.");
 
-	ros::init(argc, argv, "marker_detection");
+	string node_name="marker_detection";
+	node_name+=YAML::LoadFile(argv[1])["id_camera"].as<string>();
+
+	ros::init(argc, argv, node_name);
 
 	MarkerProcesser test(argv[1]);
 	cout<<"Begin to Process!"<<endl;
@@ -266,8 +269,8 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 		trait_im.copyTo(*plot);
 		aff_markers(markers,plot);
 	}
-	//publish
 
+	//publish
 	(*r_save).lock();
 	publishMarckersPose(markers);
 	cout<<"Time:"<<(ros::Time::now()-mesure_temps)*1000<<" ms"<<endl;

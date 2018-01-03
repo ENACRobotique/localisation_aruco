@@ -55,9 +55,17 @@ robot2.append(videocamera)
 # place your component at the correct location
 videocamera.translate(0, 0,1)
 videocamera.rotate(0.85,-.5,0)
+vid_pose = Pose()
+videocamera.append(vid_pose)
 
-pose2 = Pose()
-videocamera.append(pose2)
+videocamera2 = VideoCamera()
+videocamera2.properties(cam_width=480,cam_height=480,cam_focal=32)
+robot2.append(videocamera2)
+# place your component at the correct location
+videocamera2.translate(0, 2,1)
+videocamera2.rotate(-0.85,-.5,0)
+vid_pose2 = Pose()
+videocamera2.append(vid_pose2)
 
 # To ease development and debugging, we add a socket interface to our robot.
 #
@@ -68,6 +76,7 @@ videocamera.append(pose2)
 robot.add_default_interface('ros')
 robot2.add_default_interface('ros')
 videocamera.add_interface('ros')
+videocamera2.add_interface('ros')
 
 # set 'fastmode' to True to switch to wireframe mode
 env = Environment('table.blend', fastmode = False)

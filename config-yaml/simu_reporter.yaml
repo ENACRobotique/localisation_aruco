@@ -1,0 +1,44 @@
+%YAML:1.0
+
+topic_in: markers #topic ROS qui publie les markers
+topic_out: localisation #topic ROS qui publira les données robots
+
+
+targets: #define all targeted object
+  - id_target: 1
+    markers:
+    - id_marker: 16
+      translation: [0,0,-0.0365]
+      rotation: [0.5,-0.5,-0.5,-0.5] #w,x,y,z
+    - id_marker: 26
+      translation: [0,0,-0.0365]
+      rotation: [0,0,0.7071068,0.7071068] #w,x,y,z
+    - id_marker: 36
+      translation: [0,0,-0.0365]
+      rotation: [0.5,-0.5,0.5,0.5] #w,x,y,z
+    - id_marker: 46
+      translation: [0,0,-0.0365]
+      rotation: [0.7071068,-0.7071068,0,0] #w,x,y,z
+  - id_target: 2
+    markers:
+    - id_marker: 15
+      translation: [0,0,-0.0365]
+      rotation: [0.5,-0.5,-0.5,-0.5] #w,x,y,z
+    - id_marker: 25
+      translation: [0,0,-0.0365]
+      rotation: [0,0,0.7071068,0.7071068] #w,x,y,z
+    - id_marker: 35
+      translation: [0,0,-0.0365]
+      rotation: [0.5,-0.5,0.5,0.5] #w,x,y,z
+    - id_marker: 45
+      translation: [0,0,-0.0365]
+      rotation: [0.7071068,-0.7071068,0,0] #w,x,y,z
+
+#info created by the calibration algo
+cameras:
+  - id_cam: 1
+    translation: [0, 0,1]
+    rotation: [ 0.477407574654, -0.804811894894, 0.303299367428, -0.179914653301]
+  - id_cam: 2
+    translation: [0, 2,1]
+    rotation: [0.179914563894,-0.30329939723,0.804811894894,-0.477407604456] #w,x,y,z
