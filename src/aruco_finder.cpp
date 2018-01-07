@@ -172,6 +172,61 @@ Mat OptiMask::getOptiMask(){
 	return res_mat;
 }
 
+//-----------------ROSPUBLISHER HANDLER---------------------------------
+
+RosPublisherHandler::RosPublisherHandler(int id_cam,string topic){
+	ros::NodeHandle n;
+	pose_pub_markers= n.advertise<geometry_msgs::PoseStamped>(topic, 1);
+	Cam_id=id_cam;
+}
+geometry_msgs::PoseStamped RosPublisherHandler::
+TransformOneMarckerPose(Marker m)
+{
+
+	float x_t, y_t, z_t;
+	x_t =  m.Tvec.at<Vec3f>(0,0)[0];
+	y_t =  m.Tvec.at<Vec3f>(0,0)[1];
+	z_t =  m.Tvec.at<Vec3f>(0,0)[2];
+
+	tf::Quaternion tf_quat=Mat2Quaternion(m.Rvec);
+	geometry_msgs::Quaternion quat;
+ 	tf::quaternionTFToMsg (tf_quat,quat);
+
+
+	// See: http://en.wikipedia.org/wiki/Flight_dynamics
+#ifdef PRINT_POSE
+	cout<<"------------rotation-----------"<<endl;
+	double roll,pitch,yaw;
+	tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
+	printf( "Angle >> roll: %5.3f pitch: %5.3f yaw: %5.3f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
+	printf( "Dist. >>  x_d: %5.3f   y_d: %5.3f z_d: %5.3f \n", x_t, y_t, z_t);
+	cout<<"------------end rotation-----------"<<endl;
+#endif
+	// Now publish the pose message, remember the offsets
+	geometry_msgs::PoseStamped msg_ps;
+	geometry_msgs::Pose pose;
+
+	//m.id = id_front;
+	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id*MARKER_FRAME_MULTIPLIOR);
+	msg_ps.header.stamp = ros::Time::now();
+	pose.position.x = x_t;
+	pose.position.y = y_t;
+	pose.position.z = z_t;
+	pose.orientation = quat;
+	msg_ps.pose = pose;
+	return msg_ps;
+}
+
+void RosPublisherHandler::
+publishMarckersPose(vector<Marker>markers){
+	for(int i =0;i<markers.size();i++){
+		geometry_msgs::PoseStamped msg=
+				TransformOneMarckerPose(markers[i]);
+		pose_pub_markers.publish(msg);
+	}
+}
+
+
 //-----------------MARKER PROCESSER---------------------------------
 
 MarkerProcesser::
@@ -211,12 +266,10 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in
 	//detect marker
 	MDetector.setCornerRefinementMethod(MarkerDetector::LINES);
 	//Minimum parameters
-	Cam_id=id_cam;
 	TheMarkerSize=mark_size;
 
 	//Output Publisher
-	ros::NodeHandle n;
-	pose_pub_markers= n.advertise<geometry_msgs::PoseStamped>(out_topic, 1);
+	publisher=new RosPublisherHandler(id_cam,out_topic);
 
 	if( cam_params.CamSize.height <= 0 || cam_params.CamSize.width <= 0  )
 		return ;
@@ -274,56 +327,9 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 
 	//publish
 	(*r_save).lock();
-	publishMarckersPose(markers);
+	publisher->publishMarckersPose(markers);
 	cout<<"Time:"<<(ros::Time::now()-mesure_temps)*1000<<" ms"<<endl;
 	(*r_save).unlock();
-}
-
-geometry_msgs::PoseStamped
-MarkerProcesser::publishOneMarckerPose(Marker m)
-{
-
-	float x_t, y_t, z_t;
-	x_t =  m.Tvec.at<Vec3f>(0,0)[0];
-	y_t =  m.Tvec.at<Vec3f>(0,0)[1];
-	z_t =  m.Tvec.at<Vec3f>(0,0)[2];
-
-	tf::Quaternion tf_quat=Mat2Quaternion(m.Rvec);
-	geometry_msgs::Quaternion quat;
- 	tf::quaternionTFToMsg (tf_quat,quat);
-
-
-	// See: http://en.wikipedia.org/wiki/Flight_dynamics
-#ifdef PRINT_POSE
-	cout<<"------------rotation-----------"<<endl;
-	double roll,pitch,yaw;
-	tf::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
-	printf( "Angle >> roll: %5.3f pitch: %5.3f yaw: %5.3f \n", (roll)*(180.0/CV_PI), (pitch)*(180.0/CV_PI), (yaw)*(180.0/CV_PI));
-	printf( "Dist. >>  x_d: %5.3f   y_d: %5.3f z_d: %5.3f \n", x_t, y_t, z_t);
-	cout<<"------------end rotation-----------"<<endl;
-#endif
-	// Now publish the pose message, remember the offsets
-	geometry_msgs::PoseStamped msg_ps;
-	geometry_msgs::Pose pose;
-
-	//m.id = id_front;
-	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id*MARKER_FRAME_MULTIPLIOR);
-	msg_ps.header.stamp = ros::Time::now();
-	pose.position.x = x_t;
-	pose.position.y = y_t;
-	pose.position.z = z_t;
-	pose.orientation = quat;
-	msg_ps.pose = pose;
-	return msg_ps;
-}
-
-void MarkerProcesser::
-publishMarckersPose(vector<Marker>markers){
-	for(int i =0;i<markers.size();i++){
-		geometry_msgs::PoseStamped msg=
-				publishOneMarckerPose(markers[i]);
-		pose_pub_markers.publish(msg);
-	}
 }
 
 void MarkerProcesser::

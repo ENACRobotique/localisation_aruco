@@ -96,3 +96,7 @@ void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed,const Scalar color,
 
 }
 
+void interfaceError(){
+	throw std::invalid_argument(
+			"Il faut redéfinir les méthodes getCurrentImage et getLastImage!");
+}

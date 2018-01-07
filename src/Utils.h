@@ -58,3 +58,4 @@ vector<Point3f>Axes3D(float size);
 void EasyPolyLine(Mat* im,vector<Point2f>ptsCam,bool closed=false,const Scalar color=Scalar::all(255),
                   int thickness=1, int lineType=8, int shift=0);
 
+void interfaceError();

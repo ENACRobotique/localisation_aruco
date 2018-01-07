@@ -18,14 +18,11 @@ public:
 	ros::Time timestamp;
 
 	//Constructor, Destructor
-	ImageHandler(string topic=""){};
-	virtual ~ImageHandler(){};
+	ImageHandler(string topic=""){}
+	virtual ~ImageHandler(){}
 
-	virtual void getCurrentImage(cv::Mat *input_image){
-		throw std::invalid_argument(
-		"Il faut redéfinir les méthodes getCurrentImage et getLastImage!");
-	};
-	virtual void getLastImage(cv::Mat *input_image){};
+	virtual void getCurrentImage(cv::Mat *input_image){return interfaceError();}
+	virtual void getLastImage(cv::Mat *input_image){return interfaceError();}
 };
 
 // classe qui gère les images arrivant de ROS
@@ -79,6 +76,26 @@ public:
 	Mat getOptiMask();
 };
 
+//classe qui gère les sorties
+class PublisherHandler{
+public:
+	PublisherHandler(){};
+	virtual ~PublisherHandler(){};
+	virtual void publishMarckersPose(vector<Marker>markers){return interfaceError();}
+};
+//Ros publisher
+class RosPublisherHandler:public PublisherHandler{
+private:
+	ros::Publisher pose_pub_markers;
+	int Cam_id=0;
+
+	geometry_msgs::PoseStamped TransformOneMarckerPose(Marker m);
+public:
+	RosPublisherHandler(int id_cam,string topic="");
+	void publishMarckersPose(vector<Marker>markers);
+};
+
+
 #define PLOT_AXIS_LENGHT 0.25
 //classe qui vient superviser tout le traitement
 class MarkerProcesser{
@@ -87,7 +104,6 @@ public:
 	MarkerDetector MDetector;
 
 	//Minimum parameters
-	int Cam_id=0;
 	CameraParameters TheCameraParameters;
 	float TheMarkerSize=-1;
 
@@ -98,24 +114,24 @@ public:
 	OptiMask OptimisationMask;
 
 	//Output Publisher
-	ros::Publisher pose_pub_markers;
+	PublisherHandler* publisher;
 	std::recursive_mutex * r_save;
 
-	//Constructeurs
+	//Constructeurs / Destructeurs
 	MarkerProcesser(string yaml);
 	MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic);
-	
+	~MarkerProcesser(){
+		free(ImConv);
+		free(publisher);
+	}
 	//Main Function!
 	void DetectUpdateMaskPublish(bool Opti=false,Mat* plot=NULL);
 
 	void getMaskedImage();
-	void publishMarckersPose(vector<Marker>markers);
 	void aff_markers(vector<Marker>markers,Mat *plot);
 
 	void RunOpti();
 
-private:
-	geometry_msgs::PoseStamped publishOneMarckerPose(Marker m);
 };
 
 void threadUseMaskOptimisation(MarkerProcesser *mark_process);
