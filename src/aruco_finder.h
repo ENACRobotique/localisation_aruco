@@ -13,7 +13,23 @@
 
 
 // classe qui gère l'arrivée des images
-class ImageConverter{
+class ImageHandler{
+public:
+	ros::Time timestamp;
+
+	//Constructor, Destructor
+	ImageHandler(string topic=""){};
+	virtual ~ImageHandler(){};
+
+	virtual void getCurrentImage(cv::Mat *input_image){
+		throw std::invalid_argument(
+		"Il faut redéfinir les méthodes getCurrentImage et getLastImage!");
+	};
+	virtual void getLastImage(cv::Mat *input_image){};
+};
+
+// classe qui gère les images arrivant de ROS
+class RosImageConverter:public ImageHandler{
   Mat src_img;
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
@@ -28,12 +44,11 @@ public:
   ros::Time timestamp;
 
   //Constructor, Destructor
-  ImageConverter(string topic="");
-  ~ImageConverter();
+  RosImageConverter(string topic="");
+  ~RosImageConverter();
 
   void getCurrentImage(cv::Mat *input_image);
   void getLastImage(cv::Mat *input_image);
-//  bool newImage(cv::Mat *input_image);
 
 
 };
@@ -77,7 +92,7 @@ public:
 	float TheMarkerSize=-1;
 
 	//Gestionaire de l'image
-	ImageConverter ImConv;
+	ImageHandler* ImConv;
 
 	//Masque d'optimisation
 	OptiMask OptimisationMask;

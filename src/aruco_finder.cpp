@@ -37,7 +37,7 @@ int main(int argc,char **argv){
 
 //-----------------IM CONVERTER---------------------------------
 
-ImageConverter::ImageConverter(string topic) : it_(nh_)
+RosImageConverter::RosImageConverter(string topic) : it_(nh_)
 {
 	r_mutex=new std::recursive_mutex ();
   // subscribe to input video feed and publish output video feed
@@ -45,24 +45,24 @@ ImageConverter::ImageConverter(string topic) : it_(nh_)
 	if(topic==""){
 		return;
 	}
-	image_sub_ = it_.subscribe(topic, 1, &ImageConverter::imageCb, this);
+	image_sub_ = it_.subscribe(topic, 1, &RosImageConverter::imageCb, this);
 
 
 }
 
-ImageConverter::~ImageConverter()
+RosImageConverter::~RosImageConverter()
 {
   image_sub_.shutdown();
   printf("\n>> ROS Stopped Image Import \n");
 }
 
-void ImageConverter::getLastImage(cv::Mat *input_image) {
+void RosImageConverter::getLastImage(cv::Mat *input_image) {
 	(*r_mutex).lock();
 	*input_image = src_img;
 	(*r_mutex).unlock();
 }
 
-void ImageConverter::getCurrentImage(cv::Mat *input_image) {
+void RosImageConverter::getCurrentImage(cv::Mat *input_image) {
 	int count=0;
 	while((timestamp.toSec() - last_frame.toSec()) <= 0) {
 		usleep(100);
@@ -78,7 +78,7 @@ void ImageConverter::getCurrentImage(cv::Mat *input_image) {
 	(*r_mutex).unlock();
 }
 
-void ImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
+void RosImageConverter::imageCb(const sensor_msgs::ImageConstPtr& msg)
 {
   ros::Time frame_time = ros::Time::now();
   timestamp = frame_time;
@@ -190,7 +190,7 @@ MarkerProcesser(string yaml)
 	Mat current_image;
 	while (current_image.empty()) {
 		ros::spinOnce();
-		ImConv.getCurrentImage(&current_image);
+		ImConv->getCurrentImage(&current_image);
 		usleep(1000);
 	}
 
@@ -202,8 +202,10 @@ MarkerProcesser(string yaml)
 
 MarkerProcesser::
 MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in_topic,string out_topic)
-	:ImConv(in_topic)
+
 {
+	ImConv=new RosImageConverter(in_topic);
+
 	r_save=new std::recursive_mutex ();
 
 	//detect marker
@@ -223,7 +225,7 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,int id_cam,string in
 	Mat current_image;
 	while (current_image.empty()) {
 		ros::spinOnce();
-		ImConv.getCurrentImage(&current_image);
+		ImConv->getCurrentImage(&current_image);
 		usleep(1000);
 	}
 
@@ -244,9 +246,9 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 	//get im
 	Mat current_im,trait_im;
 	if(Opti)
-		ImConv.getCurrentImage(&current_im);
+		ImConv->getCurrentImage(&current_im);
 	else
-		ImConv.getLastImage(&current_im);
+		ImConv->getLastImage(&current_im);
 
 	ros::Time mesure_temps=ros::Time::now();
 	//apply mask if needed
