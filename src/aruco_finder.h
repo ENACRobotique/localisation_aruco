@@ -42,13 +42,18 @@ public:
 #define WATCHING_BOX_DIVIDER 2.25
 //classe qui gère la fenêtre d'optimisation (fenêtre ou d'autres arucos on été observé récement!)
 class OptiMask{
-public:
+private:
 	//attruibuts de fonctionnement
 	std::recursive_mutex * r_mutex;
 	list<Mat> sliding_mask;
 	list<ros::Time> sliding_timestamp;
 	Mat staticMask;
 
+	//internal methods
+	void cleanOldMask();
+	Rect2d watchingBindingBox(Marker marker,Size im_size);
+
+public:
 	//Constructers
 	OptiMask(){
 		r_mutex=new std::recursive_mutex ();
@@ -57,11 +62,6 @@ public:
 
 	void updateOptiMask(vector<Marker>markers);
 	Mat getOptiMask();
-
-private:
-	void cleanOldMask();
-	Rect2d watchingBindingBox(Marker marker,Size im_size);
-
 };
 
 #define PLOT_AXIS_LENGHT 0.25
