@@ -93,7 +93,6 @@ MarkerProcesser(string yaml,ImageHandler* i,PublisherHandler* p)
 	//wait a image
 	Mat current_image;
 	while (current_image.empty()) {
-		ros::spinOnce();
 		ImConv->getCurrentImage(&current_image);
 		usleep(1000);
 	}
@@ -126,7 +125,6 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,ImageHandler* i,Publ
 	//wait a image
 	Mat current_image;
 	while (current_image.empty()) {
-		ros::spinOnce();
 		ImConv->getCurrentImage(&current_image);
 		usleep(1000);
 	}
@@ -141,10 +139,6 @@ MarkerProcesser(CameraParameters cam_params,float mark_size,ImageHandler* i,Publ
 void MarkerProcesser::
 DetectUpdateMaskPublish(bool Opti,Mat* plot){
 
-	(*r_save).lock();
-	ros::spinOnce();
-	(*r_save).unlock();
-
 	//get im
 	Mat current_im,trait_im;
 	if(Opti)
@@ -152,7 +146,10 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 	else
 		ImConv->getLastImage(&current_im);
 
-	ros::Time mesure_temps=ros::Time::now();
+
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	long int mesure_temps=tp.tv_sec * 1e6 + tp.tv_usec;
 	//apply mask if needed
 	if(Opti){
 		current_im.copyTo(trait_im,OptimisationMask.getOptiMask());
@@ -177,7 +174,12 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 	//publish
 	(*r_save).lock();
 	publisher->publishMarckersPose(markers);
-	cout<<"Time:"<<(ros::Time::now()-mesure_temps)*1000<<" ms"<<endl;
+	gettimeofday(&tp, NULL);
+	if(Opti)
+		cout<<"Time:IN :";
+	else
+		cout<<"Time:OUT:";
+	cout<<(tp.tv_sec * 1e6 + tp.tv_usec-mesure_temps)/1000<<" ms"<<endl;
 	(*r_save).unlock();
 }
 
@@ -207,9 +209,8 @@ aff_markers(vector<Marker>markers,Mat *plot){
 
 //optimisation thread => use the opti mask
 void threadUseMaskOptimisation(MarkerProcesser *mark_process){
+
 	while(true){
-		ros::Time test=ros::Time::now();
 		mark_process->DetectUpdateMaskPublish(true);
-		cout<<"IN :"<<ros::Time::now()-test<<" ms"<<endl;
 	}
 }

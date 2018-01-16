@@ -73,6 +73,7 @@ RosImageConverter::~RosImageConverter()
 
 void RosImageConverter::getLastImage(cv::Mat *input_image) {
 	(*r_mutex).lock();
+	ros::spinOnce();
 	*input_image = src_img;
 	(*r_mutex).unlock();
 }
