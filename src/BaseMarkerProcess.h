@@ -9,30 +9,20 @@
 
 // UTILS
 #include <Utils.h>
-
-//ROS
-#include "ros/ros.h"
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/PointStamped.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <visualization_msgs/Marker.h>
-//ROS IMAGE INTERFACE
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <sensor_msgs/image_encodings.h>
-
+//time struct
+#include <sys/time.h>
 
 // classe qui gère l'arrivée des images
 class ImageHandler{
 public:
-	ros::Time timestamp;
 
 	//Constructor, Destructor
-	ImageHandler(string topic=""){}
+	ImageHandler(){}
 	virtual ~ImageHandler(){}
 
 	virtual void getCurrentImage(cv::Mat *input_image){return interfaceError();}
 	virtual void getLastImage(cv::Mat *input_image){return interfaceError();}
+	virtual void getCurrentTime(long int* t){return interfaceError();}
 };
 
 #define OLDEST_OPTI_MASK 0.25
@@ -43,7 +33,7 @@ private:
 	//attruibuts de fonctionnement
 	std::recursive_mutex * r_mutex;
 	list<Mat> sliding_mask;
-	list<ros::Time> sliding_timestamp;
+	list<long int> sliding_timestamp;
 	Mat staticMask;
 
 	//internal methods

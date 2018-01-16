@@ -9,11 +9,15 @@ OptiMask::OptiMask(Size im_size)
 };
 
 void OptiMask::cleanOldMask(){
-	list<ros::Time>::iterator time = sliding_timestamp.end();
-	while(sliding_timestamp.size()!=0 && time!=sliding_timestamp.begin()){
-		time--;//pour choisir le temps précedent
-		ros::Duration delta=ros::Time::now()-(*time);
-		if(delta >ros::Duration(OLDEST_OPTI_MASK )){
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+
+	list<long int>::iterator time_it = sliding_timestamp.end();
+	while(sliding_timestamp.size()!=0 && time_it!=sliding_timestamp.begin()){
+		time_it--;//pour choisir le temps précedent
+
+		long int delta= tp.tv_sec * 1e6 + tp.tv_usec - (*time_it) ;
+		if( delta > OLDEST_OPTI_MASK*1e6 ){
 			sliding_mask.pop_back();
 			sliding_timestamp.pop_back();
 		}
@@ -48,7 +52,9 @@ updateOptiMask(vector<Marker>markers){
 		new_mask(box).setTo(Scalar::all(255));
 	}
 	sliding_mask.push_front(new_mask);
-	sliding_timestamp.push_front(ros::Time::now());
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	sliding_timestamp.push_front(  tp.tv_sec * 1e6 + tp.tv_usec );
 
 	cleanOldMask();
 

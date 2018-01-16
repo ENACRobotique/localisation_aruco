@@ -11,6 +11,16 @@
 
 #include <BaseMarkerProcess.h>
 
+//ROS
+#include "ros/ros.h"
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PointStamped.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
+//ROS IMAGE INTERFACE
+#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/image_encodings.h>
 
 // classe qui gère les images arrivant de ROS
 class RosImageConverter:public ImageHandler{
