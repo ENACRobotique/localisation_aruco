@@ -43,43 +43,10 @@ include_directories(
 	src/
 )
 
-## Cube pos est l'exécutable qui prend des images en entrée et renvoient la pos des robot
-add_executable(${PROJECT_NAME}_cube_pos
-	src/ros_aruco.cpp 
-	src/aruco_cube.cpp 
-	src/aruco_cube.h
-)
-set_target_properties(${PROJECT_NAME}_cube_pos PROPERTIES OUTPUT_NAME cube_pos PREFIX "")
 
-add_dependencies(${PROJECT_NAME}_cube_pos ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_cube_pos 
-	${catkin_LIBRARIES}
-	${OpenCV_LIBS}
-	${aruco_LIBS}
-	${WIRINGPI_LIBRARIES}
-	yaml-cpp
-)
-## fin executable cube pos
-
-## Calibration de la table à l'instalation des balises
-add_executable(${PROJECT_NAME}_calibration_world
-	src/calibration_world.cpp 
-	src/aruco_cube.cpp 
-	src/aruco_cube.h
-)
-set_target_properties(${PROJECT_NAME}_calibration_world PROPERTIES OUTPUT_NAME calibration_world PREFIX "")
-
-add_dependencies(${PROJECT_NAME}_calibration_world ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(${PROJECT_NAME}_calibration_world 
-	${catkin_LIBRARIES}
-	${OpenCV_LIBS}
-	${aruco_LIBS}
-	${WIRINGPI_LIBRARIES}
-	yaml-cpp
-)
-#fin calib
+################
+## Executable ##
+################
 
 ## Process marker (Bloc indépendant)
 add_executable(${PROJECT_NAME}_marker_detection
