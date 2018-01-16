@@ -50,9 +50,11 @@ include_directories(
 
 ## Process marker (Bloc indépendant)
 add_executable(${PROJECT_NAME}_marker_detection
-	src/aruco_finder.cpp
+	src/BaseMarkerProcess.cpp
+	src/RosSpectator.cpp
 	src/Utils.cpp
-	src/aruco_finder.h
+	src/BaseMarkerProcess.h
+	src/RosSpectator.h
 	src/Utils.h
 )
 set_target_properties(${PROJECT_NAME}_marker_detection PROPERTIES OUTPUT_NAME marker_detection PREFIX "")
