@@ -173,7 +173,7 @@ DetectUpdateMaskPublish(bool Opti,Mat* plot){
 
 	//publish
 	(*r_save).lock();
-	publisher->publishMarckersPose(markers);
+	publisher->publishMarkersPose(markers,plot);
 	gettimeofday(&tp, NULL);
 	if(Opti)
 		cout<<"Time:IN :";

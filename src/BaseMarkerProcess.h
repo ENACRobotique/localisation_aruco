@@ -56,7 +56,7 @@ class PublisherHandler{
 public:
 	PublisherHandler(){};
 	virtual ~PublisherHandler(){};
-	virtual void publishMarckersPose(vector<Marker>markers){return interfaceError();}
+	virtual void publishMarkersPose(vector<Marker>markers,Mat *plot=NULL){return interfaceError();}
 };
 
 #define PLOT_AXIS_LENGHT 0.25

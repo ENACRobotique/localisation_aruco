@@ -164,7 +164,7 @@ TransformOneMarckerPose(Marker m)
 }
 
 void RosPublisherHandler::
-publishMarckersPose(vector<Marker>markers){
+publishMarkersPose(vector<Marker>markers,Mat* pose){
 	for(int i =0;i<markers.size();i++){
 		geometry_msgs::PoseStamped msg=
 				TransformOneMarckerPose(markers[i]);

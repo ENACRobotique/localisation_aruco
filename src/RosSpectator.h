@@ -56,7 +56,7 @@ private:
 	geometry_msgs::PoseStamped TransformOneMarckerPose(Marker m);
 public:
 	RosPublisherHandler(int id_cam,string topic="");
-	void publishMarckersPose(vector<Marker>markers);
+	void publishMarkersPose(vector<Marker>markers,Mat *pose=NULL);
 };
 
 
