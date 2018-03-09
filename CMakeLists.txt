@@ -4,7 +4,7 @@ PROJECT(cube_pos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport )
+FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp rospy tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport )
 
 
 SET(ARUCO_PATH /opt/ros/kinetic)
@@ -16,10 +16,28 @@ FIND_PACKAGE(OpenCV REQUIRED)
 
 FIND_PACKAGE(aruco REQUIRED)
 
+#Generating our Service
+add_service_files(
+	FILES
+	CalibRequest.srv
+)
+
+## Generating our messages
+add_message_files(
+	FILES
+	Robot.msg
+	Robots.msg
+)
+generate_messages(
+	DEPENDENCIES
+	std_msgs
+	geometry_msgs
+)
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES beginner_tutorials
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -46,20 +64,6 @@ include_directories(
     includes/
 	src/
 )
-
-## Generating our messages
-#add_message_files(
-#		FILES
-#		Robot.msg
-#        Robots.msg
-#)
-#
-#generate_messages(
-#        DEPENDENCIES
-#        std_msgs
-#        geometry_msgs
-#)
-
 
 ################
 ## Executable ##

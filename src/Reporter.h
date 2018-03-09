@@ -15,6 +15,11 @@
 #include <geometry_msgs/PointStamped.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
+//Service & Message
+#include "cube_pos/CalibRequest.h"
+#include "Robot.h"
+#include "Robots.h"
+
 
 typedef struct{
 	int id_transfo;
