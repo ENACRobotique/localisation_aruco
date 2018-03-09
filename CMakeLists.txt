@@ -6,6 +6,7 @@ PROJECT(cube_pos)
 ## is used, also find other catkin packages
 FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport )
 
+
 SET(ARUCO_PATH /opt/ros/kinetic)
 SET(CMAKE_MODULE_PATH ${ARUCO_PATH}/lib/cmake)
 SET(ARUCO_INCLUDE_DIRS ${ARUCO_PATH}/include/aruco)
@@ -35,15 +36,29 @@ endif()
 INCLUDE(FindPkgConfig)
 
 SET(ROS_BUILD_TYPE Release)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2 -fpermissive")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
 	${catkin_INCLUDE_DIRS}
 	${ARUCO_INCLUDE_DIRS}
+    includes/
 	src/
 )
+
+## Generating our messages
+#add_message_files(
+#		FILES
+#		Robot.msg
+#        Robots.msg
+#)
+#
+#generate_messages(
+#        DEPENDENCIES
+#        std_msgs
+#        geometry_msgs
+#)
 
 
 ################
