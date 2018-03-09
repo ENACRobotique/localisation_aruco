@@ -46,7 +46,7 @@ updateOptiMask(vector<Marker>markers){
 	(*r_mutex).lock();
 
 	staticMask.copyTo(new_mask);
-	for(int i=0;i<markers.size();i++){
+	for(int i=0;i<(int)markers.size();i++){
 		Rect2d box=watchingBindingBox(markers[i],
 									staticMask.size());
 		new_mask(box).setTo(Scalar::all(255));
@@ -189,7 +189,7 @@ aff_markers(vector<Marker>markers,Mat *plot){
 		return;
 	char id_str[3];
 	Point2d coin_bas_gauche_text;
-	for(int i=0;i<markers.size();i++){
+	for(int i=0;i<(int)markers.size();i++){
 		//axis
 		CvDrawingUtils::draw3dAxis(*plot,
 								TheCameraParameters,

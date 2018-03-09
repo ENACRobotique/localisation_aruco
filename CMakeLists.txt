@@ -30,13 +30,13 @@ if( EXISTS /opt/vc/include/bcm_host.h)
 	include_directories(${WIRINGPI_INCLUDE_DIRS}) 
 else()
 	SET(WIRINGPI_LIBRARIES "")
-	set(USE_RASPI TRUE)
+	set(USE_RASPI FALSE)
 endif()
 
 INCLUDE(FindPkgConfig)
 
 SET(ROS_BUILD_TYPE Release)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2 -fpermissive")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2 -fpermissive -Wall")
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations

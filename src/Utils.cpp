@@ -59,7 +59,7 @@ vector<Point2f>Points3DtoCamPoints(vector<cv::Point3f> objectPoints,
 
 vector<Point2i>PTS2FtoPTS2I(vector<Point2f> vect){
 	vector<Point2i>res;
-	for(int i =0;i<vect.size();i++)res.push_back(Point2i(vect[i]));
+	for(int i =0;i<(int)vect.size();i++)res.push_back(Point2i(vect[i]));
 	return res;
 }
 

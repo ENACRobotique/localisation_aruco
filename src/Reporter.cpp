@@ -119,7 +119,7 @@ vector<geometry_msgs::PoseStamped>
 PoseTempo::
 getPose(vector<Pose>markers_ids){
 	vector<int>idS;
-	for(int i=0;i<markers_ids.size();i++)idS.push_back(
+	for(int i=0;i<(int)markers_ids.size();i++)idS.push_back(
 			markers_ids[i].id_transfo/MARKER_FRAME_MULTIPLIOR);
 
 	return getPose(idS);
@@ -180,7 +180,7 @@ importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 	vector<ProjectivPoses>res;
 	ProjectivPoses proj_pose={	};
 	Pose interpose={};
-	for(int i=0;i<new_poses.size();i++){
+	for(int i=0;i<(int)new_poses.size();i++){
 		interpose.id_transfo=stoi(new_poses[i].header.frame_id);
 		interpose.x=new_poses[i].pose.position.x;
 		interpose.y=new_poses[i].pose.position.y;
@@ -227,7 +227,7 @@ void Target::reproject(ProjectivPoses& p){
 }
 
 int Target::find_id_pose(vector<Pose> in,int id,int offset,int max){
-	for(int i=0;i<in.size();i++){
+	for(int i=0;i<(int)in.size();i++){
 		if((in[i].id_transfo%max)/offset==id){
 			return i;
 		}
@@ -279,14 +279,14 @@ readYAML(string yaml){
 
 	//read all targets
 	vector<Pose>cameras;
-	for(int i=0;i<config["cameras"].size();i++){
+	for(int i=0;i<(int)config["cameras"].size();i++){
 		cameras.push_back(readCamTransfo(config["cameras"][i]));
 	}
 	//read/create all targets
-	for(int i=0;i<config["targets"].size();i++){
+	for(int i=0;i<(int)config["targets"].size();i++){
 		YAML::Node target=config["targets"][i];
 		vector<Pose>markers;
-		for(int j=0;j<target["markers"].size();j++){
+		for(int j=0;j<(int)target["markers"].size();j++){
 			Pose p=readMarkerTransfo(target["markers"][j]);
 			p.id_transfo+=target["id_target"].as<int>()*TARGET_FRAME_MULTIPLIOR;
 			markers.push_back(p);
@@ -299,7 +299,7 @@ readYAML(string yaml){
 void  Reporter::processTargeting(){//TODO call this function in a thread
 
 	ros::spinOnce();
-	for(int i=0;i<Targets.size();i++){//TODO make a multithread here
+	for(int i=0;i<(int)Targets.size();i++){//TODO make a multithread here
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
 		Targets[i].updateProcess(pose_temp);
 		//Targets[i].publish(publisher_targets);TODO
