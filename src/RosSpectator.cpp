@@ -152,7 +152,6 @@ TransformOneMarckerPose(Marker m)
 	geometry_msgs::PoseStamped msg_ps;
 	geometry_msgs::Pose pose;
 
-	//m.id = id_front;
 	msg_ps.header.frame_id =to_string(Cam_id*CAM_FRAME_MULTIPLIOR+m.id*MARKER_FRAME_MULTIPLIOR);
 	msg_ps.header.stamp = ros::Time::now();
 	pose.position.x = x_t;

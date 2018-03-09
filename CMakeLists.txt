@@ -24,10 +24,12 @@ catkin_package(
 
 if( EXISTS /opt/vc/include/bcm_host.h)
 	add_definitions(-DRASPI)
+	set(USE_RASPI TRUE)
 	find_package(WiringPi REQUIRED)
 	include_directories(${WIRINGPI_INCLUDE_DIRS}) 
 else()
 	SET(WIRINGPI_LIBRARIES "")
+	set(USE_RASPI TRUE)
 endif()
 
 INCLUDE(FindPkgConfig)
@@ -49,7 +51,7 @@ include_directories(
 ################
 
 ## Process marker (Bloc indépendant)
-add_executable(${PROJECT_NAME}_marker_detection
+add_executable(${PROJECT_NAME}_Marker_Spectator
 	src/BaseMarkerProcess.cpp
 	src/RosSpectator.cpp
 	src/Utils.cpp
@@ -57,11 +59,11 @@ add_executable(${PROJECT_NAME}_marker_detection
 	src/RosSpectator.h
 	src/Utils.h
 )
-set_target_properties(${PROJECT_NAME}_marker_detection PROPERTIES OUTPUT_NAME marker_detection PREFIX "")
+set_target_properties(${PROJECT_NAME}_Marker_Spectator PROPERTIES OUTPUT_NAME Marker_Spectator PREFIX "")
 
-add_dependencies(${PROJECT_NAME}_marker_detection ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_Marker_Spectator ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_marker_detection 
+target_link_libraries(${PROJECT_NAME}_Marker_Spectator 
 	${catkin_LIBRARIES}
 	${OpenCV_LIBS}
 	${aruco_LIBS}
@@ -88,7 +90,26 @@ target_link_libraries(${PROJECT_NAME}_reporter
 	${WIRINGPI_LIBRARIES}
 	yaml-cpp
 )
-#fin Process marker
+#fin Reporter
+
+IF(USE_RASPI)
+## UART_interface
+	add_executable(${PROJECT_NAME}_UARTspectator
+		src/UART_interface/main.cpp
+	)
+	set_target_properties(${PROJECT_NAME}_UARTspectator PROPERTIES OUTPUT_NAME UARTspectator PREFIX "")
+
+	add_dependencies(${PROJECT_NAME}_UARTspectator ${catkin_EXPORTED_TARGETS})
+
+	target_link_libraries(${PROJECT_NAME}_UARTspectator 
+		${catkin_LIBRARIES}
+		${WIRINGPI_LIBRARIES}
+		m
+		crypt
+		rt
+	)
+	#fin UART_interface
+endif()
 
 add_definitions(-DDEBUG)
 
