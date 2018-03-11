@@ -187,7 +187,7 @@ void MarkerProcesser::
 aff_markers(vector<Marker>markers,Mat *plot){
 	if(plot==NULL)
 		return;
-	char id_str[3];
+	char id_str[4];//999 max + \0
 	Point2d coin_bas_gauche_text;
 	for(int i=0;i<(int)markers.size();i++){
 		//axis

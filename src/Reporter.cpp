@@ -65,8 +65,11 @@ rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q){
 Pose invPose(Pose p){
 	Pose res=p;
 	res.id_transfo=-res.id_transfo;
-	res.quat=res.quat.inverse();
+	res.x=-res.x;
+	res.y=-res.y;
+	res.z=-res.z;
 	rotateWithQuat(res.x,res.y,res.z,res.quat);
+	res.quat=res.quat.inverse();
 	return res;
 }
 
@@ -89,7 +92,6 @@ bool eigenvector_compute(Eigen::Matrix4d M,tf::Quaternion& mean_quat){
 
 	// Construct matrix operation object using the wrapper class DenseSymMatProd
 	Spectra::DenseSymMatProd<double> op(M);
-	//cout<<op<<endl;
 	// Construct eigen solver object, requesting the largest three eigenvalues
 	Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, 3, 4);
 
