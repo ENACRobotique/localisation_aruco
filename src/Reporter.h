@@ -118,6 +118,8 @@ public:
 	void publish();
 	void processTargeting();
 
+	int reCalibrate();
+
 };
 
 

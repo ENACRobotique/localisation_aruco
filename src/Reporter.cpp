@@ -421,4 +421,46 @@ void  Reporter::processTargeting(){
 
 	}
 	publish();
+	//reCalibrate();
+}
+
+
+int  Reporter::reCalibrate(){
+	//First find the calibration targets
+	int calib_index=-1;
+	for(int i=0;i<(int)Targets.size();i++){
+		if(Targets[i].id==CALIB_TARGET){
+			calib_index=i;
+			break;
+		}
+	}
+	if(calib_index==-1)return -1;//No calibration targets
+
+	Target t=Targets[calib_index];
+	int nb_recalib=0;
+	cout<<"---------------------RECALIBRATION---------------------"<<endl;
+	for(int i=0;i<(int)t.World2Cam.size();i++){//for every camera
+		int id_cam=t.World2Cam[i].id_transfo/CAM_FRAME_MULTIPLIOR;
+		//create vector of all markers see by the camera
+		vector<Pose>poses;
+		for(int j=0;j<(int)t.slidingPoses.size();j++){
+			if(t.slidingPoses[j].Cam2Obj.id_transfo/CAM_FRAME_MULTIPLIOR==id_cam)
+				poses.push_back(invPose(t.slidingPoses[j].Cam2Obj));
+		}
+		//Now fusion data to obtain the best estimation of the camera position
+		if(fusionDataFunction(poses,t.World2Cam[i])){
+			nb_recalib++;
+			t.World2Cam[i].id_transfo=id_cam*CAM_FRAME_MULTIPLIOR;
+		}
+	}
+
+	//Update all World2Cam Target vector
+	for(int i=0;i<(int)Targets.size();i++){
+		Targets[i].World2Cam=t.World2Cam;
+	}
+
+
+	cout<<"nb recalib : "<<nb_recalib<<endl;
+	return nb_recalib;
+
 }
