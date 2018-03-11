@@ -32,7 +32,7 @@ int main(int argc,char **argv){
 	MarkerProcesser test(argv[1],&ImConvertor,&publisher);
 	cout<<"Begin to Process!"<<endl;
 
-	std::thread thread_opti(threadUseMaskOptimisation, &test);
+//	std::thread thread_opti(threadUseMaskOptimisation, &test);
 
 	int key;Mat im;bool opt=false;
 	while((key=waitKey(1))!='x' && key!=27){

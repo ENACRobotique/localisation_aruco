@@ -19,7 +19,9 @@
 #include "cube_pos/CalibRequest.h"
 #include "Robot.h"
 #include "Robots.h"
-
+//libraries for quaternion fusion
+#include <Eigen/Core>
+#include <SymEigsSolver.h>
 
 typedef struct{
 	int id_transfo;
@@ -43,6 +45,7 @@ void plot_pose(Pose p);
 void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
 Pose invPose(Pose p);
 Pose multiPose(Pose a,Pose b);
+bool eigenvector_compute(Eigen::Matrix4d M,tf::Quaternion& mean_quat);
 
 #define POSE_MAX_NUMBER 100
 class PoseTempo{
@@ -71,6 +74,7 @@ class Target{
 public:
 	//sliding_windows of projectiv poses
 	vector<ProjectivPoses> slidingPoses;
+	Pose fusionedPose;
 	//complementary transformation
 	vector<Pose>Markers2Target;
 	vector<Pose>World2Cam;
@@ -87,7 +91,7 @@ public:
 	void reproject(ProjectivPoses& p);
 	ProjectivPoses reprojectNewMarker(Pose p);
 	void cleanOldPoses();
-	ProjectivPoses fusionDataFunction();
+	void fusionDataFunction();
 
 	void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
 	int find_id_pose(vector<Pose> in,int id,int offset,int max);

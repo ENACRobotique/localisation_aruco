@@ -28,12 +28,12 @@ int main(int argc,char **argv){
 	Reporter report(argv[1]);
 
 	signal(SIGINT, sig_stop);
-	//for(int i=0;i<12;i++){
+
 	while(allowed){
 
 		report.processTargeting();
 
-		usleep(100000);
+		usleep(25000);
 	}
 
 
@@ -85,6 +85,37 @@ Pose multiPose(Pose a,Pose b){
 	return res;
 }
 
+bool eigenvector_compute(Eigen::Matrix4d M,tf::Quaternion& mean_quat){
+
+	// Construct matrix operation object using the wrapper class DenseSymMatProd
+	Spectra::DenseSymMatProd<double> op(M);
+	//cout<<op<<endl;
+	// Construct eigen solver object, requesting the largest three eigenvalues
+	Spectra::SymEigsSolver< double, Spectra::LARGEST_ALGE, Spectra::DenseSymMatProd<double> > eigs(&op, 3, 4);
+
+	// Initialize and compute
+	eigs.init();
+	int nconv = eigs.compute();
+
+	//Extract result
+	if(eigs.info() != Spectra::SUCCESSFUL)
+		return false;
+
+	//take the greater Eigenvalues
+	int index=0;
+	Eigen::VectorXd evalues = eigs.eigenvalues();
+	for(int i=0; i<nconv;i++){
+		if(evalues[index]<evalues[i])
+			index=i;
+	}
+	mean_quat=tf::Quaternion(eigs.eigenvectors().col(index)[1], //x
+							 eigs.eigenvectors().col(index)[2], //y
+							 eigs.eigenvectors().col(index)[3], //z
+							 eigs.eigenvectors().col(index)[0]);//w
+	return true;
+
+}
+
 //--------------------------PoseTempo---------------------------------
 
 PoseTempo::PoseTempo(string topic)
@@ -94,7 +125,7 @@ PoseTempo::PoseTempo(string topic)
 	if(topic==""){
 		return;
 	}
-	pose_sub = nh_.subscribe(topic, 1, &PoseTempo::poseCb, this);
+	pose_sub = nh_.subscribe(topic, 20, &PoseTempo::poseCb, this);
 }
 
 PoseTempo::~PoseTempo()
@@ -106,7 +137,6 @@ PoseTempo::~PoseTempo()
 void PoseTempo::
 poseCb(const geometry_msgs::PoseStamped& msg){
 	(*r_mutex).lock();
-
 	waiting_poses.push_back(msg);
 	while((int)waiting_poses.size()>POSE_MAX_NUMBER)
 	{
@@ -119,8 +149,8 @@ vector<geometry_msgs::PoseStamped>
 PoseTempo::
 getPose(vector<Pose>markers_ids){
 	vector<int>idS;
-	for(int i=0;i<(int)markers_ids.size();i++)idS.push_back(
-			markers_ids[i].id_transfo/MARKER_FRAME_MULTIPLIOR);
+	for(int i=0;i<(int)markers_ids.size();i++)
+		idS.push_back(markers_ids[i].id_transfo/MARKER_FRAME_MULTIPLIOR);
 
 	return getPose(idS);
 }
@@ -157,10 +187,16 @@ updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 	importPoses(new_poses);
 	cleanOldPoses();
 
-	//fusion
+	fusionDataFunction();
 
 }
 
+void Target::
+publish(ros::Publisher publisher){
+	//TODO
+	//publish
+
+}
 
 void Target::
 cleanOldPoses(){
@@ -176,10 +212,49 @@ cleanOldPoses(){
 }
 
 void Target::
+fusionDataFunction(){
+	//check if there data for fusion
+	if(slidingPoses.size()==0)return;
+	//initialize
+	fusionedPose.id_transfo=slidingPoses[0].World2Obj.id_transfo;
+	fusionedPose.x=fusionedPose.y=fusionedPose.z=0;
+	//https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf page 4
+	Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
+
+	for(int i=0;i<(int)slidingPoses.size();i++){
+		//mean position
+		fusionedPose.x+=slidingPoses[i].World2Obj.x;
+		fusionedPose.y+=slidingPoses[i].World2Obj.y;
+		fusionedPose.z+=slidingPoses[i].World2Obj.z;
+		//quaternion
+		Eigen::Vector4d q;
+		q <<  slidingPoses[i].World2Obj.quat.w(),
+			  slidingPoses[i].World2Obj.quat.x(),
+			  slidingPoses[i].World2Obj.quat.y(),
+			  slidingPoses[i].World2Obj.quat.z();
+
+		M.noalias()+=q*q.transpose();
+	}
+	//mean position
+	fusionedPose.x/=slidingPoses.size();
+	fusionedPose.y/=slidingPoses.size();
+	fusionedPose.z/=slidingPoses.size();
+	//quaternion
+	M/=slidingPoses.size();
+	//Mat K = 4*M - mat:eye;// improve efficacity
+
+	if( !eigenvector_compute(M,fusionedPose.quat) )
+		fusionedPose.quat=slidingPoses[0].World2Obj.quat;
+	cout<<"----------------FUSIONNED POSE-------------------"<<endl;
+	plot_pose(fusionedPose);
+}
+
+void Target::
 importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 	vector<ProjectivPoses>res;
 	ProjectivPoses proj_pose={	};
 	Pose interpose={};
+	cout<<"------------NB transfo : "<<new_poses.size()<<"-------------------"<<endl;
 	for(int i=0;i<(int)new_poses.size();i++){
 		interpose.id_transfo=stoi(new_poses[i].header.frame_id);
 		interpose.x=new_poses[i].pose.position.x;
@@ -296,13 +371,14 @@ readYAML(string yaml){
 
 }
 
-void  Reporter::processTargeting(){//TODO call this function in a thread
+void  Reporter::processTargeting(){
 
 	ros::spinOnce();
-	for(int i=0;i<(int)Targets.size();i++){//TODO make a multithread here
+	for(int i=0;i<(int)Targets.size();i++){
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
+
 		Targets[i].updateProcess(pose_temp);
-		//Targets[i].publish(publisher_targets);TODO
+		Targets[i].publish(publisher_targets);
 		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
 	}
 }

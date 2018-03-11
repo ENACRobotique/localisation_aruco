@@ -6,6 +6,8 @@ PROJECT(cube_pos)
 ## is used, also find other catkin packages
 FIND_PACKAGE(catkin REQUIRED COMPONENTS roscpp rospy tf std_msgs sensor_msgs geometry_msgs message_generation genmsg cv_bridge image_transport )
 
+find_package (Eigen3 REQUIRED NO_MODULE)
+
 
 SET(ARUCO_PATH /opt/ros/kinetic)
 SET(CMAKE_MODULE_PATH ${ARUCO_PATH}/lib/cmake)
@@ -61,7 +63,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -O2 -fpermiss
 include_directories(
 	${catkin_INCLUDE_DIRS}
 	${ARUCO_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIR}
     includes/
+    includes/spectra_include/
 	src/
 )
 
