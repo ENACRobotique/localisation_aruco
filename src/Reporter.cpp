@@ -192,13 +192,6 @@ updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 }
 
 void Target::
-publish(ros::Publisher publisher){
-	//TODO
-	//publish
-
-}
-
-void Target::
 cleanOldPoses(){
 	for (vector<ProjectivPoses>::iterator old_pose = slidingPoses.end();
 			old_pose != slidingPoses.begin(); ) {
@@ -368,9 +361,46 @@ readYAML(string yaml){
 		}
 		Targets.push_back(Target(cameras,markers));
 	}
+	//create the publisher
+	ros::NodeHandle n;
+	publisher_targets=n.advertise<cube_pos::Robots>(config["topic_out"].as<string>(), 1);
 
 }
 
+cube_pos::Robot Reporter::
+createMsg(Target t){
+	cube_pos::Robot msg;
+	msg.robot_id=t.fusionedPose.id_transfo;
+	msg.pose.header.frame_id=t.fusionedPose.id_transfo;
+	msg.pose.header.seq=0;
+	msg.pose.header.stamp=ros::Time::now();
+	msg.pose.pose.pose.position.x=t.fusionedPose.x;
+	msg.pose.pose.pose.position.y=t.fusionedPose.y;
+	msg.pose.pose.pose.position.z=t.fusionedPose.z;
+ 	tf::quaternionTFToMsg (t.fusionedPose.quat,
+ 						   msg.pose.pose.pose.orientation);
+	//TODO covar
+
+	msg.twist.header=msg.pose.header;
+	//TODO twist
+	return msg;
+}
+
+void Reporter::publish(){
+	if(Targets.size()==0)
+		return;
+
+	cube_pos::Robots all_msg;
+	for(int i=0;i<(int)Targets.size();i++){
+		if( Targets[i].slidingPoses.size()>0)
+			all_msg.robots.push_back( createMsg(Targets[i]) );
+	}
+	if(all_msg.robots.size()==0)
+		return;
+	all_msg.header=all_msg.robots[0].pose.header;
+	publisher_targets.publish(all_msg);
+
+}
 void  Reporter::processTargeting(){
 
 	ros::spinOnce();
@@ -378,7 +408,7 @@ void  Reporter::processTargeting(){
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
 
 		Targets[i].updateProcess(pose_temp);
-		Targets[i].publish(publisher_targets);
 		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
 	}
+	publish();
 }

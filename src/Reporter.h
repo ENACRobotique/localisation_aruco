@@ -83,7 +83,6 @@ public:
 	Target(vector<Pose>cameras,vector<Pose>markers);
 
 	void updateProcess(vector<geometry_msgs::PoseStamped> new_poses);
-	void publish(ros::Publisher publisher);
 	void aff_Cam_Projection(bool fusion=false);
 //private:
 	void importPoses(vector<geometry_msgs::PoseStamped> new_poses);
@@ -114,6 +113,8 @@ public:
 	Pose readCamTransfo(YAML::Node pose_node);
 	void addTargets();
 	void deleteTargets();
+	cube_pos::Robot createMsg(Target t);
+	void publish();
 	void processTargeting();
 
 };

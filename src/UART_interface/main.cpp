@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 
 	int fd ;
 	//ros node
-	std::string topic ="marker";
+	std::string topic ="markers";
 	
 	ros::init(argc, argv, "UARTspectator1");
 	ros::NodeHandle n;

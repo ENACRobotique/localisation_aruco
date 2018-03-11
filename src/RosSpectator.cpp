@@ -14,6 +14,12 @@
 
 #include "RosSpectator.h"
 
+bool allowed=true;
+void sig_stop(int a)
+{
+	allowed=false;
+}
+
 int main(int argc,char **argv){
 	if(argc!=2)
 		throw std::invalid_argument(
@@ -34,8 +40,10 @@ int main(int argc,char **argv){
 
 //	std::thread thread_opti(threadUseMaskOptimisation, &test);
 
+	signal(SIGINT, sig_stop);
+
 	int key;Mat im;bool opt=false;
-	while((key=waitKey(1))!='x' && key!=27){
+	while((key=waitKey(1))!='x' && key!=27 && allowed){
 
 		if(key=='o')
 			opt^=true;
