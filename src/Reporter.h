@@ -46,6 +46,7 @@ void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
 Pose invPose(Pose p);
 Pose multiPose(Pose a,Pose b);
 bool eigenvector_compute(Eigen::Matrix4d M,tf::Quaternion& mean_quat);
+bool fusionDataFunction(vector<Pose>poses,Pose &fusionedPose);
 
 #define POSE_MAX_NUMBER 100
 class PoseTempo{
@@ -91,7 +92,6 @@ public:
 	void reproject(ProjectivPoses& p);
 	ProjectivPoses reprojectNewMarker(Pose p);
 	void cleanOldPoses();
-	void fusionDataFunction();
 
 	void rotateWithQuat(double &x,double&y,double&z,tf::Quaternion q);
 	int find_id_pose(vector<Pose> in,int id,int offset,int max);

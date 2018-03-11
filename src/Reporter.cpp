@@ -118,6 +118,44 @@ bool eigenvector_compute(Eigen::Matrix4d M,tf::Quaternion& mean_quat){
 
 }
 
+bool fusionDataFunction(vector<Pose>poses,Pose &fusionedPose){
+	//check if there data for fusion
+	if(poses.size()==0)return false;
+	//initialize
+	fusionedPose.id_transfo=poses[0].id_transfo;
+	fusionedPose.x=fusionedPose.y=fusionedPose.z=0;
+	//https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf page 4
+	Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
+
+	for(int i=0;i<(int)poses.size();i++){
+		//mean position
+		fusionedPose.x+=poses[i].x;
+		fusionedPose.y+=poses[i].y;
+		fusionedPose.z+=poses[i].z;
+		//quaternion
+		Eigen::Vector4d q;
+		q <<poses[i].quat.w(),
+			poses[i].quat.x(),
+			poses[i].quat.y(),
+			poses[i].quat.z();
+
+		M.noalias()+=q*q.transpose();
+	}
+	//mean position
+	fusionedPose.x/=poses.size();
+	fusionedPose.y/=poses.size();
+	fusionedPose.z/=poses.size();
+	//quaternion
+	M/=poses.size();
+	//Mat K = 4*M - mat:eye;// improve efficacity
+
+	if( !eigenvector_compute(M,fusionedPose.quat) )
+		fusionedPose.quat=poses[0].quat;
+	cout<<"----------------FUSIONNED POSE-------------------"<<endl;
+	plot_pose(fusionedPose);
+	return true;
+}
+
 //--------------------------PoseTempo---------------------------------
 
 PoseTempo::PoseTempo(string topic)
@@ -190,7 +228,10 @@ updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 	importPoses(new_poses);
 	cleanOldPoses();
 
-	fusionDataFunction();
+	vector<Pose>Pose_world;
+	for(int i=0;i<(int)slidingPoses.size();i++)
+		Pose_world.push_back(slidingPoses[i].World2Obj);
+	fusionDataFunction(Pose_world,fusionedPose);
 
 }
 
@@ -207,50 +248,14 @@ cleanOldPoses(){
 	}
 }
 
-void Target::
-fusionDataFunction(){
-	//check if there data for fusion
-	if(slidingPoses.size()==0)return;
-	//initialize
-	fusionedPose.id_transfo=slidingPoses[0].World2Obj.id_transfo;
-	fusionedPose.x=fusionedPose.y=fusionedPose.z=0;
-	//https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20070017872.pdf page 4
-	Eigen::Matrix4d M = Eigen::Matrix4d::Zero();
 
-	for(int i=0;i<(int)slidingPoses.size();i++){
-		//mean position
-		fusionedPose.x+=slidingPoses[i].World2Obj.x;
-		fusionedPose.y+=slidingPoses[i].World2Obj.y;
-		fusionedPose.z+=slidingPoses[i].World2Obj.z;
-		//quaternion
-		Eigen::Vector4d q;
-		q <<  slidingPoses[i].World2Obj.quat.w(),
-			  slidingPoses[i].World2Obj.quat.x(),
-			  slidingPoses[i].World2Obj.quat.y(),
-			  slidingPoses[i].World2Obj.quat.z();
-
-		M.noalias()+=q*q.transpose();
-	}
-	//mean position
-	fusionedPose.x/=slidingPoses.size();
-	fusionedPose.y/=slidingPoses.size();
-	fusionedPose.z/=slidingPoses.size();
-	//quaternion
-	M/=slidingPoses.size();
-	//Mat K = 4*M - mat:eye;// improve efficacity
-
-	if( !eigenvector_compute(M,fusionedPose.quat) )
-		fusionedPose.quat=slidingPoses[0].World2Obj.quat;
-	cout<<"----------------FUSIONNED POSE-------------------"<<endl;
-	plot_pose(fusionedPose);
-}
 
 void Target::
 importPoses(vector<geometry_msgs::PoseStamped> new_poses){
 	vector<ProjectivPoses>res;
 	ProjectivPoses proj_pose={	};
 	Pose interpose={};
-	cout<<"------------NB transfo : "<<new_poses.size()<<"-------------------"<<endl;
+	//cout<<"------------NB transfo : "<<new_poses.size()<<"-------------------"<<endl;
 	for(int i=0;i<(int)new_poses.size();i++){
 		interpose.id_transfo=stoi(new_poses[i].header.frame_id);
 		interpose.x=new_poses[i].pose.position.x;
