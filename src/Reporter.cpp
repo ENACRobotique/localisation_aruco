@@ -231,8 +231,9 @@ updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 	vector<Pose>Pose_world;
 	for(int i=0;i<(int)slidingPoses.size();i++)
 		Pose_world.push_back(slidingPoses[i].World2Obj);
-	fusionDataFunction(Pose_world,fusionedPose);
 
+	if(id!=CALIB_TARGET)
+		fusionDataFunction(Pose_world,fusionedPose);
 }
 
 void Target::
@@ -400,7 +401,7 @@ void Reporter::publish(){
 
 	cube_pos::Robots all_msg;
 	for(int i=0;i<(int)Targets.size();i++){
-		if( Targets[i].slidingPoses.size()>0)
+		if( Targets[i].id!=CALIB_TARGET && Targets[i].slidingPoses.size()>0)
 			all_msg.robots.push_back( createMsg(Targets[i]) );
 	}
 	if(all_msg.robots.size()==0)
