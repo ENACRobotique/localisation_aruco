@@ -33,6 +33,8 @@ template <typename T> inline int sgn(T val) {
 #define MARKER_FRAME_MULTIPLIOR 100
 #define TARGET_FRAME_MULTIPLIOR 1
 
+#define CALIB_TARGET 99
+
 tf::Quaternion Mat2Quaternion(Mat r);
 
 Mat Rotation33(double alpha,double beta,double gamma);

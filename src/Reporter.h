@@ -72,7 +72,8 @@ public:
 #define OLDEST_TARGET .25
 class Target{
 public:
-	//sliding_windows of projectiv poses
+	//sliding_windows of projectiv pose
+	int id=0;
 	vector<ProjectivPoses> slidingPoses;
 	Pose fusionedPose;
 	//complementary transformation
@@ -80,7 +81,7 @@ public:
 	vector<Pose>World2Cam;
 	//constructor
 	Target(){};
-	Target(vector<Pose>cameras,vector<Pose>markers);
+	Target(vector<Pose>cameras,vector<Pose>markers,int id_t=0);
 
 	void updateProcess(vector<geometry_msgs::PoseStamped> new_poses);
 	void aff_Cam_Projection(bool fusion=false);

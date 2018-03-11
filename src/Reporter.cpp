@@ -179,9 +179,10 @@ getPose(vector<int>idS){
 
 //--------------------------Target---------------------------------
 
-Target::Target(vector<Pose>cameras,vector<Pose>markers){
+Target::Target(vector<Pose>cameras,vector<Pose>markers,int id_t){
 	World2Cam=cameras;
 	Markers2Target=markers;
+	id=id_t;
 }
 
 void Target::
@@ -361,7 +362,7 @@ readYAML(string yaml){
 			p.id_transfo+=target["id_target"].as<int>()*TARGET_FRAME_MULTIPLIOR;
 			markers.push_back(p);
 		}
-		Targets.push_back(Target(cameras,markers));
+		Targets.push_back(Target(cameras,markers,target["id_target"].as<int>()));
 	}
 	//create the publisher
 	ros::NodeHandle n;
@@ -410,7 +411,8 @@ void  Reporter::processTargeting(){
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
 
 		Targets[i].updateProcess(pose_temp);
-		cout<<"Target "<<i<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
+		cout<<"Target "<<Targets[i].id<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
+
 	}
 	publish();
 }
