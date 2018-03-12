@@ -28,4 +28,4 @@ projection_matrix: !!opencv-matrix
 
 topic_in: /robot2/videocamera/image #topic ROS qui publie la vidéo
 topic_out: markers #topic de sortie
-marker_size: 0.067 #m
+marker_size: 1 #0.067 #m

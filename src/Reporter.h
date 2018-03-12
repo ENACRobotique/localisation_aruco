@@ -79,10 +79,11 @@ public:
 	Pose fusionedPose;
 	//complementary transformation
 	vector<Pose>Markers2Target;
+	vector<double>MarkerScale;
 	vector<Pose>World2Cam;
 	//constructor
 	Target(){};
-	Target(vector<Pose>cameras,vector<Pose>markers,int id_t=0);
+	Target(vector<Pose>cameras,vector<Pose>markers,vector<double>scale_markers,int id_t=0);
 
 	void updateProcess(vector<geometry_msgs::PoseStamped> new_poses);
 	void aff_Cam_Projection(bool fusion=false);

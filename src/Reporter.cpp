@@ -217,10 +217,11 @@ getPose(vector<int>idS){
 
 //--------------------------Target---------------------------------
 
-Target::Target(vector<Pose>cameras,vector<Pose>markers,int id_t){
+Target::Target(vector<Pose>cameras,vector<Pose>markers,vector<double>scale_markers,int id_t){
 	World2Cam=cameras;
 	Markers2Target=markers;
 	id=id_t;
+	MarkerScale=scale_markers;
 }
 
 void Target::
@@ -294,6 +295,10 @@ void Target::reproject(ProjectivPoses& p){
 	idMark= find_id_pose(Markers2Target,idMark,MARKER_FRAME_MULTIPLIOR,CAM_FRAME_MULTIPLIOR);
 	if(id_cam<0 || idMark<0)
 		return ;
+	//Scale Correction
+	p.Cam2mark.x*=MarkerScale[idMark];
+	p.Cam2mark.y*=MarkerScale[idMark];
+	p.Cam2mark.z*=MarkerScale[idMark];
 	//reprojection
 	p.Cam2Obj=multiPose(p.Cam2mark,Markers2Target[idMark]);
 	p.Cam2Obj.id_transfo*=-1;
@@ -363,12 +368,16 @@ readYAML(string yaml){
 	for(int i=0;i<(int)config["targets"].size();i++){
 		YAML::Node target=config["targets"][i];
 		vector<Pose>markers;
+		vector<double>scale_marker;
 		for(int j=0;j<(int)target["markers"].size();j++){
+			//read pose
 			Pose p=readMarkerTransfo(target["markers"][j]);
 			p.id_transfo+=target["id_target"].as<int>()*TARGET_FRAME_MULTIPLIOR;
 			markers.push_back(p);
+			//read scale
+			scale_marker.push_back(target["markers"][j]["scale"].as<double>());
 		}
-		Targets.push_back(Target(cameras,markers,target["id_target"].as<int>()));
+		Targets.push_back(Target(cameras,markers,scale_marker,target["id_target"].as<int>()));
 	}
 	//create the publisher & service
 	ros::NodeHandle n;
