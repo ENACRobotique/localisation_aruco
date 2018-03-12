@@ -45,9 +45,13 @@ targets: #define all targeted object
   - id_target: 99
     markers:
     - id_marker: -255
-      translation: [ 0.6 , 1, 0 ]
+      translation: [ 1.25 , 1, 0 ]
       rotation: [1,0,0,0] #w,x,y,z
-      scale: 0.067 #m
+      scale: 0.5 #m
+    - id_marker: -254
+      translation: [ 1.5 , 1.75, 0 ]
+      rotation: [1,0,0,0] #w,x,y,z
+      scale: 0.25 #m
 
 #info created by the calibration algo
 cameras:

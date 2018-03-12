@@ -229,12 +229,12 @@ updateProcess(vector<geometry_msgs::PoseStamped> new_poses){
 	importPoses(new_poses);
 	cleanOldPoses();
 
+	if(id==CALIB_TARGET) return;
+
 	vector<Pose>Pose_world;
 	for(int i=0;i<(int)slidingPoses.size();i++)
 		Pose_world.push_back(slidingPoses[i].World2Obj);
-
-	if(id!=CALIB_TARGET)
-		fusionDataFunction(Pose_world,fusionedPose);
+	fusionDataFunction(Pose_world,fusionedPose);
 }
 
 void Target::
