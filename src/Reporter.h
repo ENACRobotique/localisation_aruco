@@ -104,6 +104,7 @@ public:
 	//input and output of the system
 	PoseTempo tempo;
 	ros::Publisher publisher_targets;
+	ros::ServiceServer Calibservice;
 
 	//constructor
 	Reporter(string yaml);
@@ -120,7 +121,10 @@ public:
 
 	int reCalibrate();
 
+	bool ExecCalibration(cube_pos::CalibRequest::Request  &req,
+			             cube_pos::CalibRequest::Response &res);
 };
+
 
 
 

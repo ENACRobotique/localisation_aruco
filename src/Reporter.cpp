@@ -370,9 +370,10 @@ readYAML(string yaml){
 		}
 		Targets.push_back(Target(cameras,markers,target["id_target"].as<int>()));
 	}
-	//create the publisher
+	//create the publisher & service
 	ros::NodeHandle n;
 	publisher_targets=n.advertise<cube_pos::Robots>(config["topic_out"].as<string>(), 1);
+	Calibservice = n.advertiseService("CalibrateReporter", &Reporter::ExecCalibration,this);
 
 }
 
@@ -417,7 +418,7 @@ void  Reporter::processTargeting(){
 		vector<geometry_msgs::PoseStamped> pose_temp=tempo.getPose(Targets[i].Markers2Target);
 
 		Targets[i].updateProcess(pose_temp);
-		cout<<"Target "<<Targets[i].id<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
+		//cout<<"Target "<<Targets[i].id<<" nb:"<<Targets[i].slidingPoses.size()<<endl;
 
 	}
 	publish();
@@ -463,4 +464,17 @@ int  Reporter::reCalibrate(){
 	cout<<"nb recalib : "<<nb_recalib<<endl;
 	return nb_recalib;
 
+}
+
+
+bool Reporter::
+ExecCalibration(cube_pos::CalibRequest::Request  &req,
+		        cube_pos::CalibRequest::Response &res){
+	//do recalibration
+	int nb_recal=reCalibrate();
+	//Update response
+	res.done=(nb_recal>=req.nb_cam);
+	res.tot_cam=nb_recal;
+	//TODO register modification if asked
+	return true;
 }

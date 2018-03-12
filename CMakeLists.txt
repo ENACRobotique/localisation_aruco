@@ -18,6 +18,8 @@ FIND_PACKAGE(OpenCV REQUIRED)
 
 FIND_PACKAGE(aruco REQUIRED)
 
+catkin_python_setup()
+
 #Generating our Service
 add_service_files(
 	FILES
@@ -132,6 +134,9 @@ IF(USE_RASPI)
 	)
 	#fin UART_interface
 endif()
+
+catkin_install_python(PROGRAMS bin/recalib
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 add_definitions(-DDEBUG)
 
