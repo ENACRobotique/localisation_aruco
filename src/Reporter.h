@@ -17,8 +17,8 @@
 #include <visualization_msgs/Marker.h>
 //Service & Message
 #include "cube_pos/CalibRequest.h"
-#include "Robot.h"
-#include "Robots.h"
+#include "cube_pos/Robot.h"
+#include "cube_pos/Robots.h"
 //libraries for quaternion fusion
 #include <Eigen/Core>
 #include <SymEigsSolver.h>

@@ -1,4 +1,4 @@
-int64 cam
+int8 nb_cam
 ---
 bool done
-float64 ecart
+int8 tot_cam

@@ -64,8 +64,7 @@ include_directories(
 	${catkin_INCLUDE_DIRS}
 	${ARUCO_INCLUDE_DIRS}
 	${EIGEN3_INCLUDE_DIR}
-    includes/
-    includes/spectra_include/
+   spectra_include/
 	src/
 )
 
